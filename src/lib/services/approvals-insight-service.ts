@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import type {
   ApprovalAction,
   RequestCategory,
@@ -268,8 +268,4 @@ async function fetchApprovalsInsight(): Promise<{
   return { entryCards, pipelineCards };
 }
 
-export const getApprovalsInsight = unstable_cache(
-  fetchApprovalsInsight,
-  ["approvals-insight-v1"],
-  { revalidate: 60 }
-);
+export const getApprovalsInsight = cache(fetchApprovalsInsight);

@@ -5,6 +5,8 @@ import {
   ApprovalsInsightSkeleton,
 } from "@/components/dashboard/approvals-insight-dashboard";
 
+export const dynamic = "force-dynamic";
+
 async function ApprovalsInsightContent() {
   const insight = await getApprovalsInsight();
   return (

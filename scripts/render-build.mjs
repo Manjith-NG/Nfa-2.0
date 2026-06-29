@@ -5,7 +5,7 @@ import { spawnSync } from "child_process";
 import { mkdirSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { resolveDatabaseEnv } from "./resolve-database-env.mjs";
+import { resolveDatabaseEnv, normalizeRuntimeDatabaseUrl } from "./resolve-database-env.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const schemaPath = resolve(root, "prisma", "schema.prisma");
@@ -55,6 +55,12 @@ console.log("\n[render-build] Seed database...");
 run("npx", ["tsx", "prisma/seed.ts"]);
 
 console.log("\n[render-build] Next.js build...");
+if (process.env.DATABASE_URL?.includes(":5432") && process.env.DATABASE_URL.includes("pooler")) {
+  console.warn("[render-build] DATABASE_URL still uses session pooler :5432 — normalizing to :6543");
+  process.env.DATABASE_URL = normalizeRuntimeDatabaseUrl(process.env.DATABASE_URL);
+}
+const dbPort = process.env.DATABASE_URL?.match(/:(\d+)\//)?.[1] ?? "unknown";
+console.log(`[render-build] DATABASE_URL port: ${dbPort}`);
 run("npm", ["run", "build"]);
 
 console.log("\n[render-build] Done.\n");
