@@ -3,7 +3,9 @@ import { FALLBACK_LOGIN_OPTIONS } from "@/lib/demo-users";
 import { getLoginOptions } from "@/lib/services/auth-service";
 
 const DB_SETUP_HINT =
-  "Database not connected. Run: npm run setup:env YOUR_SUPABASE_DATABASE_PASSWORD then npm run db:seed";
+  process.env.RENDER || process.env.NODE_ENV === "production"
+    ? "Database not connected. In Render → Environment, set SUPABASE_DB_PASSWORD (Supabase database password) or DATABASE_URL + DIRECT_URL, then redeploy."
+    : "Database not connected. Run: npm run setup:env YOUR_SUPABASE_DATABASE_PASSWORD then npm run db:seed";
 
 /** Public list of demo login accounts sourced from the `users` table. */
 export async function GET() {

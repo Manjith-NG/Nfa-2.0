@@ -5,10 +5,10 @@ import { spawnSync } from "child_process";
 import { mkdirSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { resolveDatabaseEnv } from "./resolve-database-env.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const schemaPath = resolve(root, "prisma", "schema.prisma");
-const dataDir = resolve(root, "data");
 const uploadsDir = resolve(root, "uploads");
 
 function run(cmd, args) {
@@ -18,15 +18,17 @@ function run(cmd, args) {
 
 if (!existsSync(schemaPath)) {
   console.error(`[render-build] Missing ${schemaPath}`);
-  console.error("[render-build] Commit prisma/schema.prisma before deploying.");
   process.exit(1);
 }
 
-if (!existsSync(dataDir)) mkdirSync(dataDir, { recursive: true });
 if (!existsSync(uploadsDir)) mkdirSync(uploadsDir, { recursive: true });
 
-if (!process.env.DATABASE_URL) {
-  console.error("[render-build] DATABASE_URL is required (Supabase PostgreSQL pooler URL).");
+console.log("\n[render-build] Resolving database environment...");
+const dbOk = await resolveDatabaseEnv({ required: true });
+if (!dbOk) {
+  console.error(
+    "[render-build] Add SUPABASE_DB_PASSWORD (or DATABASE_URL + DIRECT_URL) in Render → Environment, then redeploy."
+  );
   process.exit(1);
 }
 
@@ -34,13 +36,12 @@ const dbUrl = process.env.DATABASE_URL;
 const looksLikePooler =
   dbUrl.includes("pooler") || dbUrl.includes(":6543") || dbUrl.includes("pgbouncer=true");
 
+if (!process.env.DIRECT_URL && looksLikePooler) {
+  console.error("[render-build] DIRECT_URL is required when using the Supabase pooler.");
+  process.exit(1);
+}
+
 if (!process.env.DIRECT_URL) {
-  if (looksLikePooler) {
-    console.error("[render-build] DIRECT_URL is required when DATABASE_URL uses Supabase pooler.");
-    console.error("[render-build] Set DIRECT_URL to the direct db host on port 5432 (see .env.example).");
-    process.exit(1);
-  }
-  console.warn("[render-build] DIRECT_URL not set — using DATABASE_URL for migrations.");
   process.env.DIRECT_URL = dbUrl;
 }
 

@@ -1,8 +1,8 @@
 /** Supabase project configuration (NFA) */
 export const SUPABASE_PROJECT_REF = "uuqzhbzovurnlbiuazgh";
 export const SUPABASE_URL = "https://uuqzhbzovurnlbiuazgh.supabase.co";
-/** Session pooler — region may vary; scripts/test-connection.mjs finds the working host */
-export const SUPABASE_POOLER_HOST = "aws-0-ap-south-1.pooler.supabase.com";
+/** Session pooler — primary region for project uuqzhbzovurnlbiuazgh */
+export const SUPABASE_POOLER_HOST = "aws-1-ap-northeast-1.pooler.supabase.com";
 
 export function buildSupabaseDatabaseUrl(password: string): string {
   const encoded = encodeURIComponent(password);
