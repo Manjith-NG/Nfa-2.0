@@ -15,9 +15,7 @@ import {
 import { KpiCard } from "@/components/ui/kpi-card";
 import { RegistrarChartsSkeleton } from "@/components/dashboard/registrar-charts";
 import { RegistrarRecentRequests } from "@/components/dashboard/registrar-recent-requests";
-import { ApprovalsInsightDashboard } from "@/components/dashboard/approvals-insight-dashboard";
 import type { DashboardAnalytics } from "@/lib/services/dashboard-service";
-import type { ApprovalsInsightCard } from "@/lib/services/approvals-insight-service";
 import type { DashboardStats, RequestListItem } from "@/types";
 
 const RegistrarCharts = dynamic(
@@ -36,15 +34,10 @@ export function RegistrarDashboard({
   stats,
   analytics,
   recentRequests = [],
-  approvalsInsight,
 }: {
   stats: RegistrarStats;
   analytics: DashboardAnalytics;
   recentRequests?: RequestListItem[];
-  approvalsInsight?: {
-    entryCards: ApprovalsInsightCard[];
-    pipelineCards: ApprovalsInsightCard[];
-  };
 }) {
   return (
     <div className="space-y-8">
@@ -115,13 +108,6 @@ export function RegistrarDashboard({
           />
         </div>
       </section>
-
-      {approvalsInsight && (
-        <ApprovalsInsightDashboard
-          entryCards={approvalsInsight.entryCards}
-          pipelineCards={approvalsInsight.pipelineCards}
-        />
-      )}
 
       <RegistrarCharts analytics={analytics} />
 

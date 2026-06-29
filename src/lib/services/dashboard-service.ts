@@ -89,6 +89,8 @@ async function fetchRequestItems(
     statusIn?: RequestStatus[];
     category?: RequestCategory;
     currentRoleCode?: RoleCode;
+    stageRole?: RoleCode;
+    stageOutcome?: "accepted" | "pending" | "rejected" | "resend";
     academicSectionId?: string;
     clubId?: string;
   } = {}
@@ -102,6 +104,8 @@ async function fetchRequestItems(
     statusIn: options.statusIn,
     category: options.category,
     currentRoleCode: options.currentRoleCode,
+    stageRole: options.stageRole,
+    stageOutcome: options.stageOutcome,
     academicSectionId: options.academicSectionId,
     clubId: options.clubId,
   });

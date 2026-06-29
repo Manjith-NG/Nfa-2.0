@@ -19,6 +19,7 @@ import {
   GitBranch,
   ChevronLeft,
   GraduationCap,
+  ClipboardList,
 } from "lucide-react";
 import { NavLink } from "@/components/layout/nav-link";
 import { cn } from "@/lib/utils";
@@ -42,6 +43,7 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   Shield,
   Settings,
   GitBranch,
+  ClipboardList,
 };
 
 export function Sidebar({

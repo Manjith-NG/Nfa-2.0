@@ -180,6 +180,7 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
   ],
   REGISTRAR: [
     { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
+    { href: "/approvals/insight", label: "Role Queues", icon: "ClipboardList" },
     { href: "/requests", label: "All Requests", icon: "Files" },
     { href: "/approvals", label: "Approvals", icon: "CheckSquare" },
     { href: "/analytics", label: "Analytics", icon: "BarChart3" },
@@ -188,6 +189,7 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
   ],
   OFC: [
     { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
+    { href: "/approvals/insight", label: "Role Queues", icon: "ClipboardList" },
     { href: "/requests", label: "All Requests", icon: "Files" },
     { href: "/approvals", label: "Approvals", icon: "CheckSquare" },
     { href: "/analytics", label: "Analytics", icon: "BarChart3" },

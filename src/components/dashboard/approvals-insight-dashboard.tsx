@@ -7,9 +7,12 @@ import type { ApprovalsInsightCard } from "@/lib/services/approvals-insight-serv
 function InsightCard({ card }: { card: ApprovalsInsightCard }) {
   const resendLabel = card.roleCode === "HOD" || card.roleCode === "COE" ? "Resend" : "Recheck";
 
-  const content = (
-    <div className="flex h-full flex-col">
-      <div className="mb-3 flex items-start justify-between gap-2">
+  return (
+    <div className="nfa-card flex h-full min-h-[168px] flex-col p-5 transition-colors hover:border-orange-200">
+      <Link
+        href={card.filterHref}
+        className="mb-3 flex items-start justify-between gap-2 rounded-md transition-colors hover:bg-orange-50/40"
+      >
         <div className="min-w-0">
           <h4 className="text-sm font-bold uppercase tracking-wide text-orange-600">{card.label}</h4>
           {card.flowSteps && card.flowSteps.length > 0 && (
@@ -19,37 +22,27 @@ function InsightCard({ card }: { card: ApprovalsInsightCard }) {
           )}
         </div>
         <span className="shrink-0 text-2xl font-bold text-orange-600">{card.total}</span>
-      </div>
+      </Link>
 
       <div className="mt-auto grid flex-1 grid-cols-2 gap-x-4 gap-y-3 border-t border-slate-100 pt-3">
-        <StatBlock value={card.accepted} label="Accepted" />
-        <StatBlock value={card.pending} label="Pending" />
-        <StatBlock value={card.resend} label={resendLabel} />
-        <StatBlock value={card.rejected} label="Rejected" />
+        <StatLink href={card.hrefAccepted} value={card.accepted} label="Accepted" />
+        <StatLink href={card.hrefPending} value={card.pending} label="Pending" />
+        <StatLink href={card.hrefResend} value={card.resend} label={resendLabel} />
+        <StatLink href={card.hrefRejected} value={card.rejected} label="Rejected" />
       </div>
     </div>
   );
-
-  if (card.filterHref) {
-    return (
-      <Link
-        href={card.filterHref}
-        className="nfa-card block h-full min-h-[168px] p-5 transition-colors hover:border-orange-200 hover:bg-orange-50/30"
-      >
-        {content}
-      </Link>
-    );
-  }
-
-  return <div className="nfa-card h-full min-h-[168px] p-5">{content}</div>;
 }
 
-function StatBlock({ value, label }: { value: number; label: string }) {
+function StatLink({ href, value, label }: { href: string; value: number; label: string }) {
   return (
-    <div>
+    <Link
+      href={href}
+      className="rounded-md px-1 py-0.5 transition-colors hover:bg-orange-50/60"
+    >
       <p className="text-xl font-bold text-slate-900">{value}</p>
       <p className="text-xs font-medium text-slate-500">{label}</p>
-    </div>
+    </Link>
   );
 }
 
@@ -104,16 +97,17 @@ export function ApprovalsInsightDashboard({
       <div>
         <div className="flex items-center gap-2">
           <ClipboardList className="h-5 w-5 text-nfa-primary" />
-          <h3 className="text-lg font-semibold text-slate-900">Approvals Insight Dashboard</h3>
+          <h3 className="text-lg font-semibold text-slate-900">Approvals by Role</h3>
         </div>
         <p className="mt-1 text-sm text-slate-500">
-          Track requests at each stage. Each card shows its full approval flow — click to filter requests.
+          Click a role or total to see all requests at that stage. Click Accepted, Pending, Recheck, or
+          Rejected to filter by status.
         </p>
       </div>
 
       {allCards.length === 0 ? (
         <div className="nfa-card text-sm text-slate-500">
-          No workflow templates configured yet. Set up flows in Flow Control to see stage counts.
+          No workflow templates configured yet. Set up flows in Sections &amp; Flow to see stage counts.
         </div>
       ) : (
         <div className="space-y-6">

@@ -509,6 +509,39 @@ export async function processApproval(
   return updated;
 }
 
+function buildStageRoleWhere(
+  stageRole: RoleCode,
+  stageOutcome?: "accepted" | "pending" | "rejected" | "resend"
+): Prisma.RequestWhereInput {
+  const pendingAtRole: Prisma.RequestWhereInput = {
+    currentRoleCode: stageRole,
+    status: { in: ["PENDING", "UNDER_REVIEW", "FORWARDED"] },
+  };
+  const resendAtRole: Prisma.RequestWhereInput = {
+    currentRoleCode: stageRole,
+    status: "RESEND",
+  };
+  const acceptedAtRole: Prisma.RequestWhereInput = {
+    approvalHistory: { some: { roleCode: stageRole, action: "APPROVE" } },
+  };
+  const rejectedAtRole: Prisma.RequestWhereInput = {
+    approvalHistory: { some: { roleCode: stageRole, action: "REJECT" } },
+  };
+
+  switch (stageOutcome) {
+    case "accepted":
+      return acceptedAtRole;
+    case "rejected":
+      return rejectedAtRole;
+    case "pending":
+      return pendingAtRole;
+    case "resend":
+      return resendAtRole;
+    default:
+      return { OR: [acceptedAtRole, rejectedAtRole, pendingAtRole, resendAtRole] };
+  }
+}
+
 export function buildRequestWhere(
   user: SessionUser,
   filters?: {
@@ -520,6 +553,8 @@ export function buildRequestWhere(
     pendingForMe?: boolean;
     mine?: boolean;
     currentRoleCode?: RoleCode;
+    stageRole?: RoleCode;
+    stageOutcome?: "accepted" | "pending" | "rejected" | "resend";
     academicSectionId?: string;
     clubId?: string;
   }
@@ -571,15 +606,26 @@ export function buildRequestWhere(
   if (filters?.statusIn?.length) where.status = { in: filters.statusIn };
   if (filters?.category) where.category = filters.category;
   if (filters?.departmentId) where.departmentId = filters.departmentId;
-  if (filters?.currentRoleCode) where.currentRoleCode = filters.currentRoleCode;
   if (filters?.academicSectionId) where.academicSectionId = filters.academicSectionId;
   if (filters?.clubId) where.clubId = filters.clubId;
-  if (filters?.search) {
-    where.OR = [
-      { title: { contains: filters.search } },
-      { requestNumber: { contains: filters.search } },
-    ];
+  if (!filters?.stageRole && filters?.currentRoleCode) {
+    where.currentRoleCode = filters.currentRoleCode;
   }
 
-  return where;
+  const andConditions: Prisma.RequestWhereInput[] = [where];
+
+  if (filters?.stageRole) {
+    andConditions.push(buildStageRoleWhere(filters.stageRole, filters.stageOutcome));
+  }
+  if (filters?.search) {
+    andConditions.push({
+      OR: [
+        { title: { contains: filters.search } },
+        { requestNumber: { contains: filters.search } },
+      ],
+    });
+  }
+
+  if (andConditions.length === 1) return andConditions[0];
+  return { AND: andConditions };
 }

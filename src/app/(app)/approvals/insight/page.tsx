@@ -1,0 +1,32 @@
+import { Suspense } from "react";
+import { getApprovalsInsight } from "@/lib/services/approvals-insight-service";
+import {
+  ApprovalsInsightDashboard,
+  ApprovalsInsightSkeleton,
+} from "@/components/dashboard/approvals-insight-dashboard";
+
+async function ApprovalsInsightContent() {
+  const insight = await getApprovalsInsight();
+  return (
+    <ApprovalsInsightDashboard
+      entryCards={insight.entryCards}
+      pipelineCards={insight.pipelineCards}
+    />
+  );
+}
+
+export default function ApprovalsInsightPage() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold text-slate-900">Role Queues</h2>
+        <p className="text-slate-500">
+          View requests at each approval stage. Manage flows and sections under Sections &amp; Flow.
+        </p>
+      </div>
+      <Suspense fallback={<ApprovalsInsightSkeleton />}>
+        <ApprovalsInsightContent />
+      </Suspense>
+    </div>
+  );
+}

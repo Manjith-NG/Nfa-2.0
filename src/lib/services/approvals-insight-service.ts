@@ -6,6 +6,7 @@ import type {
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { ROLE_LABELS } from "@/lib/constants";
+import { buildRoleQueueFilterHref } from "@/lib/role-queue-filters";
 import { buildWorkflowPath } from "@/lib/workflow/resolve";
 
 const PENDING_STATUSES = ["PENDING", "UNDER_REVIEW", "FORWARDED"] as const;
@@ -20,7 +21,11 @@ export type ApprovalsInsightCard = {
   pending: number;
   resend: number;
   rejected: number;
-  filterHref?: string;
+  filterHref: string;
+  hrefAccepted: string;
+  hrefPending: string;
+  hrefResend: string;
+  hrefRejected: string;
   flowSteps?: string[];
 };
 
@@ -105,12 +110,30 @@ function flowCardLabel(
   return ROLE_LABELS[firstRole] ?? template.name;
 }
 
-function buildFilterHref(template: TemplateRecord, roleCode: RoleCode): string {
-  const params = new URLSearchParams({ role: roleCode });
-  if (template.category === "CLUB") params.set("category", "CLUB");
-  if (template.clubId) params.set("clubId", template.clubId);
-  if (template.academicSectionId) params.set("sectionId", template.academicSectionId);
-  return `/requests?${params.toString()}`;
+function buildCardLinks(template: TemplateRecord, roleCode: RoleCode) {
+  const scope = {
+    category: template.category === "CLUB" ? ("CLUB" as const) : undefined,
+    clubId: template.clubId ?? undefined,
+    academicSectionId: template.academicSectionId ?? undefined,
+  };
+
+  return {
+    filterHref: buildRoleQueueFilterHref(roleCode, undefined, scope),
+    hrefAccepted: buildRoleQueueFilterHref(roleCode, "accepted", scope),
+    hrefPending: buildRoleQueueFilterHref(roleCode, "pending", scope),
+    hrefResend: buildRoleQueueFilterHref(roleCode, "resend", scope),
+    hrefRejected: buildRoleQueueFilterHref(roleCode, "rejected", scope),
+  };
+}
+
+function buildPipelineCardLinks(roleCode: RoleCode) {
+  return {
+    filterHref: buildRoleQueueFilterHref(roleCode),
+    hrefAccepted: buildRoleQueueFilterHref(roleCode, "accepted"),
+    hrefPending: buildRoleQueueFilterHref(roleCode, "pending"),
+    hrefResend: buildRoleQueueFilterHref(roleCode, "resend"),
+    hrefRejected: buildRoleQueueFilterHref(roleCode, "rejected"),
+  };
 }
 
 function countStageForRole(
@@ -211,7 +234,7 @@ async function fetchApprovalsInsight(): Promise<{
       label: flowCardLabel(template, firstRole, template.academicSection?.name),
       roleCode: firstRole,
       ...stats,
-      filterHref: buildFilterHref(template, firstRole),
+      ...buildCardLinks(template, firstRole),
       flowSteps: steps.map((role) =>
         role === "CLUB_AUTHORITY" ? "Club Auth." : (ROLE_LABELS[role] ?? role)
       ),
@@ -235,7 +258,7 @@ async function fetchApprovalsInsight(): Promise<{
       label: roleCode === "OFC" ? "OFC" : (ROLE_LABELS[roleCode] ?? roleCode),
       roleCode,
       ...stats,
-      filterHref: `/requests?role=${roleCode}`,
+      ...buildPipelineCardLinks(roleCode),
       flowSteps: activePipelineRoles.map((r) =>
         r === "OFC" ? "OFC" : (ROLE_LABELS[r] ?? r)
       ),
