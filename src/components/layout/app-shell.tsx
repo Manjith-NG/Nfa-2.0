@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
-import { SubNavBar } from "./sub-nav-bar";
 import {
   NavigationProvider,
   NavigationProgress,
@@ -36,7 +35,6 @@ export function AppShell({
           )}
         >
           <Topbar user={user} />
-          <SubNavBar roleCode={user.roleCode} />
           <main className="p-6">{children}</main>
         </div>
       </div>

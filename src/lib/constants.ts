@@ -101,29 +101,12 @@ export const CLUB_WORKFLOW: { stepOrder: number; roleCode: RoleCode; stepLabel: 
   { stepOrder: 6, roleCode: "OFC", stepLabel: "Awaiting Final Clearance" },
 ];
 
-export const SETTINGS_NAV_ITEM = {
+export type NavItem = { href: string; label: string; icon: string; sectionLabel?: string };
+
+export const SETTINGS_NAV_ITEM: NavItem = {
   href: "/settings",
   label: "Account",
   icon: "Settings",
-} as const;
-
-export type NavItem = { href: string; label: string; icon: string };
-
-export const SUB_NAV_BY_ROLE: Partial<Record<RoleCode, NavItem[]>> = {
-  REGISTRAR: [
-    { href: "/flow-control", label: "Sections & Flow", icon: "GitBranch" },
-    { href: "/faculty", label: "Add Faculty", icon: "Users" },
-    { href: "/authorities", label: "Staff & Roles", icon: "UserCog" },
-    { href: "/clubs/authorities", label: "Club Authorities", icon: "Users" },
-    { href: "/audit-logs", label: "Audit Logs", icon: "Shield" },
-  ],
-  OFC: [
-    { href: "/flow-control", label: "Sections & Flow", icon: "GitBranch" },
-    { href: "/faculty", label: "Add Faculty", icon: "Users" },
-    { href: "/authorities", label: "Staff & Roles", icon: "UserCog" },
-    { href: "/clubs/authorities", label: "Club Authorities", icon: "Users" },
-    { href: "/audit-logs", label: "Audit Logs", icon: "Shield" },
-  ],
 };
 
 export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
@@ -186,6 +169,11 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
     { href: "/analytics", label: "Analytics", icon: "BarChart3" },
     { href: "/reports", label: "Reports", icon: "FileText" },
     { href: "/notifications", label: "Notifications", icon: "Bell" },
+    { href: "/flow-control", label: "Sections & Flow", icon: "GitBranch", sectionLabel: "Administration" },
+    { href: "/faculty", label: "Add Faculty", icon: "Users" },
+    { href: "/authorities", label: "Staff & Roles", icon: "UserCog" },
+    { href: "/clubs/authorities", label: "Club Authorities", icon: "Users" },
+    { href: "/audit-logs", label: "Audit Logs", icon: "Shield" },
   ],
   OFC: [
     { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
@@ -195,6 +183,11 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
     { href: "/analytics", label: "Analytics", icon: "BarChart3" },
     { href: "/reports", label: "Reports", icon: "FileText" },
     { href: "/notifications", label: "Notifications", icon: "Bell" },
+    { href: "/flow-control", label: "Sections & Flow", icon: "GitBranch", sectionLabel: "Administration" },
+    { href: "/faculty", label: "Add Faculty", icon: "Users" },
+    { href: "/authorities", label: "Staff & Roles", icon: "UserCog" },
+    { href: "/clubs/authorities", label: "Club Authorities", icon: "Users" },
+    { href: "/audit-logs", label: "Audit Logs", icon: "Shield" },
   ],
   ADMIN: [
     { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },

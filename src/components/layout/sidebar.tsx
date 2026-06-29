@@ -91,21 +91,31 @@ export function Sidebar({
           const active = isNavItemActive(pathname, item.href, navHrefs);
 
           return (
-            <NavLink
-              key={item.href}
-              href={item.href}
-              active={active}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                active
-                  ? "bg-nfa-primary text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+            <div key={item.href}>
+              {item.sectionLabel && (
+                <div className={cn("mb-2", collapsed ? "mt-3 border-t border-nfa-border pt-3" : "mt-4 px-3")}>
+                  {!collapsed && (
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      {item.sectionLabel}
+                    </p>
+                  )}
+                </div>
               )}
-              title={collapsed ? item.label : undefined}
-            >
-              <Icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </NavLink>
+              <NavLink
+                href={item.href}
+                active={active}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-nfa-primary text-white"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                )}
+                title={collapsed ? item.label : undefined}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                {!collapsed && <span>{item.label}</span>}
+              </NavLink>
+            </div>
           );
         })}
       </nav>

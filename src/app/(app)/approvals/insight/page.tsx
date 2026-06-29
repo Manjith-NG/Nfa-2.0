@@ -21,7 +21,7 @@ export default function ApprovalsInsightPage() {
       <div>
         <h2 className="text-2xl font-semibold text-slate-900">Role Queues</h2>
         <p className="text-slate-500">
-          View requests at each approval stage. Manage flows and sections under Sections &amp; Flow.
+          View requests at each approval stage. Manage flows and sections from Administration in the sidebar.
         </p>
       </div>
       <Suspense fallback={<ApprovalsInsightSkeleton />}>
