@@ -1,0 +1,29 @@
+# Render Blueprint — NFA (Next.js Web Service)
+# https://render.com/docs/blueprint-spec
+#
+# In the Render dashboard, use a **Web Service** (not Static Site).
+# Do NOT set a "Publish directory" — leave it empty.
+
+services:
+  - type: web
+    name: nfa-gcu
+    runtime: node
+    region: singapore
+    plan: free
+    branch: main
+    buildCommand: npm install && npm run render-build
+    startCommand: npm start
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: "20.11.1"
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: UPLOAD_DIR
+        value: ./uploads
