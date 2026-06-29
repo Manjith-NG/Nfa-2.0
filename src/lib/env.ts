@@ -6,7 +6,7 @@ export const SUPABASE_POOLER_HOST = "aws-1-ap-northeast-1.pooler.supabase.com";
 
 export function buildSupabaseDatabaseUrl(password: string): string {
   const encoded = encodeURIComponent(password);
-  return `postgresql://postgres.${SUPABASE_PROJECT_REF}:${encoded}@${SUPABASE_POOLER_HOST}:6543/postgres?pgbouncer=true&connect_timeout=30`;
+  return `postgresql://postgres.${SUPABASE_PROJECT_REF}:${encoded}@${SUPABASE_POOLER_HOST}:6543/postgres?pgbouncer=true&connect_timeout=30&connection_limit=1&pool_timeout=20`;
 }
 
 export function buildSupabaseDirectUrl(password: string): string {

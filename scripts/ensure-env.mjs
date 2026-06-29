@@ -32,14 +32,22 @@ async function findWorkingUrls(password) {
   const direct = buildDirectUrl(password);
   if (await testUrl(direct)) {
     for (const host of POOLER_HOSTS) {
-      for (const port of [6543, 5432]) {
-        const pooler = buildPoolerUrl(password, host, port);
-        if (await testUrl(pooler)) {
-          return { database: pooler, direct };
-        }
+      const pooler = buildPoolerUrl(password, host, 6543);
+      if (await testUrl(pooler)) {
+        return { database: pooler, direct };
       }
     }
     return { database: direct, direct };
+  }
+  for (const host of POOLER_HOSTS) {
+    const pooler = buildPoolerUrl(password, host, 6543);
+    if (await testUrl(pooler)) {
+      const pooler5432 = buildPoolerUrl(password, host, 5432);
+      return {
+        database: pooler,
+        direct: (await testUrl(pooler5432)) ? pooler5432 : pooler,
+      };
+    }
   }
   return null;
 }

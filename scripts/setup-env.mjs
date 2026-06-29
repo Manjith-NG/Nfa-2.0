@@ -35,28 +35,19 @@ let direct = buildDirectUrl(password);
 
 if (await testUrl(direct)) {
   for (const host of POOLER_HOSTS) {
-    for (const port of [6543, 5432]) {
-      const pooler = buildPoolerUrl(password, host, port);
-      if (await testUrl(pooler)) {
-        database = pooler;
-        break;
-      }
+    const pooler = buildPoolerUrl(password, host, 6543);
+    if (await testUrl(pooler)) {
+      database = pooler;
+      break;
     }
-    if (database) break;
   }
   if (!database) database = direct;
 } else {
   for (const host of POOLER_HOSTS) {
     const pooler6543 = buildPoolerUrl(password, host, 6543);
-    const pooler5432 = buildPoolerUrl(password, host, 5432);
     if (await testUrl(pooler6543)) {
       database = pooler6543;
-      direct = (await testUrl(pooler5432)) ? pooler5432 : pooler6543;
-      break;
-    }
-    if (await testUrl(pooler5432)) {
-      database = pooler5432;
-      direct = pooler5432;
+      direct = (await testUrl(direct)) ? direct : pooler6543;
       break;
     }
   }
