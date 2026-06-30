@@ -27,17 +27,6 @@ export function drawCertificateHeader(
 
   doc
     .font("Helvetica-Bold")
-    .fontSize(12)
-    .fillColor("#1e293b")
-    .text("NOTE FOR APPROVAL OF CHANCELLOR", margin, y, {
-      width: pageWidth,
-      align: "center",
-    });
-
-  y = doc.y + 10;
-
-  doc
-    .font("Helvetica-Bold")
     .fontSize(10)
     .fillColor("#000000")
     .text(departmentHeading(departmentName), margin, y, {
