@@ -9,6 +9,10 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: `${APP_NAME} | ${UNIVERSITY_NAME}`,
   description: `${APP_FULL_NAME} — enterprise approval management`,
+  icons: {
+    icon: [{ url: "/gcu-logo.png", type: "image/png" }],
+    apple: "/gcu-logo.png",
+  },
 };
 
 export default function RootLayout({

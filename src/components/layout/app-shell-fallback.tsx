@@ -1,6 +1,6 @@
 import { Bone } from "@/components/ui/page-skeleton";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { APP_NAME } from "@/lib/constants";
-import { GraduationCap } from "lucide-react";
 
 /** Shown while session/auth resolves — keeps layout stable during navigation. */
 export function AppShellFallback() {
@@ -8,9 +8,7 @@ export function AppShellFallback() {
     <div className="min-h-screen">
       <aside className="fixed left-0 top-0 z-40 flex h-screen w-[var(--sidebar-width)] flex-col border-r border-nfa-border bg-white">
         <div className="flex h-16 items-center gap-3 border-b border-nfa-border px-4">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-nfa-primary text-white">
-            <GraduationCap className="h-5 w-5" />
-          </div>
+          <BrandLogo size={36} />
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-nfa-primary">{APP_NAME}</p>
             <Bone className="mt-1 h-2 w-24" />

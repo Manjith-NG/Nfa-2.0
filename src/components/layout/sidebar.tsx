@@ -18,9 +18,9 @@ import {
   Settings,
   GitBranch,
   ChevronLeft,
-  GraduationCap,
   ClipboardList,
 } from "lucide-react";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { NavLink } from "@/components/layout/nav-link";
 import { cn } from "@/lib/utils";
 import { NAV_BY_ROLE, APP_NAME, APP_FULL_NAME, SETTINGS_NAV_ITEM } from "@/lib/constants";
@@ -72,9 +72,7 @@ export function Sidebar({
       )}
     >
       <div className="flex h-16 items-center gap-3 border-b border-nfa-border px-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-nfa-primary text-white">
-          <GraduationCap className="h-5 w-5" />
-        </div>
+        <BrandLogo size={36} priority />
         {!collapsed && (
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-nfa-primary">{APP_NAME}</p>

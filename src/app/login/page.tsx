@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { BrandLogo } from "@/components/layout/brand-logo";
 import { APP_NAME, APP_FULL_NAME, UNIVERSITY_NAME } from "@/lib/constants";
 import { DEMO_LOGIN_PASSWORD, FALLBACK_LOGIN_OPTIONS } from "@/lib/demo-users";
 import { signInWithCredentials } from "@/lib/auth-client";
@@ -129,9 +130,7 @@ export default function LoginPage() {
         <div className="w-full max-w-[420px] overflow-hidden rounded-2xl bg-white shadow-[0_25px_60px_-12px_rgba(0,0,0,0.45)] ring-1 ring-white/20">
           <div className="bg-nfa-primary px-7 py-6 text-white sm:px-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/15">
-                <GraduationCap className="h-6 w-6" />
-              </div>
+              <BrandLogo size={44} priority className="rounded-lg ring-1 ring-white/20" />
               <div className="min-w-0">
                 <p className="text-xl font-bold tracking-tight">{APP_NAME}</p>
                 <p className="truncate text-sm text-white/85">{APP_FULL_NAME}</p>
