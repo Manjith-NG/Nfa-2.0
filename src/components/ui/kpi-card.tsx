@@ -20,6 +20,9 @@ const variantStyles = {
   resend: "text-status-resend bg-yellow-50",
 };
 
+const cardClassName =
+  "flex items-center justify-between gap-2 rounded-xl border border-nfa-border bg-white p-3 shadow-card sm:gap-3 sm:p-4";
+
 export function KpiCard({
   title,
   value,
@@ -31,20 +34,20 @@ export function KpiCard({
 }: KpiCardProps) {
   const content = (
     <>
-      <div>
-        <p className="text-sm font-medium text-slate-500">{title}</p>
-        <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">
+      <div className="min-w-0">
+        <p className="truncate text-xs font-medium text-slate-500 sm:text-sm">{title}</p>
+        <p className="mt-0.5 text-xl font-semibold tabular-nums tracking-tight text-slate-900 sm:mt-1 sm:text-2xl">
           {value}
         </p>
-        {trend && <p className="mt-1 text-xs text-slate-500">{trend}</p>}
+        {trend && <p className="mt-0.5 text-xs text-slate-500">{trend}</p>}
       </div>
       <div
         className={cn(
-          "flex h-11 w-11 items-center justify-center rounded-lg",
+          "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10",
           variantStyles[variant]
         )}
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-4 w-4 sm:h-[18px] sm:w-[18px]" />
       </div>
     </>
   );
@@ -54,7 +57,8 @@ export function KpiCard({
       <Link
         href={href}
         className={cn(
-          "nfa-card flex items-start justify-between transition-colors hover:border-nfa-primary/30 hover:bg-slate-50/50",
+          cardClassName,
+          "transition-colors hover:border-nfa-primary/30 hover:bg-slate-50/50",
           className
         )}
       >
@@ -63,9 +67,5 @@ export function KpiCard({
     );
   }
 
-  return (
-    <div className={cn("nfa-card flex items-start justify-between", className)}>
-      {content}
-    </div>
-  );
+  return <div className={cn(cardClassName, className)}>{content}</div>;
 }

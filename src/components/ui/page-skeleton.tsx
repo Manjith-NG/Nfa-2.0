@@ -6,14 +6,17 @@ export function Bone({ className }: { className?: string }) {
 
 export function KpiRowSkeleton({ count = 5 }: { count?: number }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5" aria-hidden="true">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" aria-hidden="true">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="nfa-card flex items-center justify-between gap-3 py-4">
-          <div className="space-y-2">
-            <Bone className="h-4 w-20" />
-            <Bone className="h-8 w-10" />
+        <div
+          key={i}
+          className="flex items-center justify-between gap-2 rounded-xl border border-nfa-border bg-white p-3 sm:gap-3 sm:p-4"
+        >
+          <div className="space-y-1.5">
+            <Bone className="h-3 w-16 sm:h-4 sm:w-20" />
+            <Bone className="h-6 w-8 sm:h-7 sm:w-10" />
           </div>
-          <Bone className="h-11 w-11 rounded-xl" />
+          <Bone className="h-9 w-9 rounded-lg sm:h-10 sm:w-10" />
         </div>
       ))}
     </div>

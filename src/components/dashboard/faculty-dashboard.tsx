@@ -109,7 +109,7 @@ async function FacultyRecentRequests({ user }: { user: SessionUser }) {
 
 export async function FacultyDashboard({ user }: { user: SessionUser }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <DashboardWelcome
         user={user}
         subtitle="Track and manage your approval requests"
