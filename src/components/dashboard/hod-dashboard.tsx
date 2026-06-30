@@ -91,7 +91,7 @@ async function HodPendingList({ user }: { user: SessionUser }) {
 
 export async function HodDashboard({ user }: { user: SessionUser }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <DashboardWelcome
         user={user}
         subtitle="Department approvals and requests"
@@ -103,15 +103,17 @@ export async function HodDashboard({ user }: { user: SessionUser }) {
         <HodStats user={user} />
       </Suspense>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
         <DashboardSection title="Pending Approvals" href="/approvals" linkLabel="View queue">
           <Suspense fallback={<RequestListSkeleton rows={4} />}>
             <HodPendingList user={user} />
           </Suspense>
         </DashboardSection>
 
-        <div className="nfa-card">
-          <h3 className="mb-4 font-semibold text-slate-900">Quick Actions</h3>
+        <div className="nfa-card p-4 sm:p-6">
+          <h3 className="mb-3 text-sm font-semibold text-slate-900 sm:mb-4 sm:text-base">
+            Quick Actions
+          </h3>
           <div className="grid gap-2">
             <Link href="/approvals" className="nfa-btn-primary text-center">
               Review Pending

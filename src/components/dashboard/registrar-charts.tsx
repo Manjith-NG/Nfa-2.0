@@ -22,11 +22,13 @@ const CHART_COLORS = ["#1e3a5f", "#0d9488", "#ea580c", "#16a34a", "#dc2626", "#7
 
 export function RegistrarCharts({ analytics }: { analytics: DashboardAnalytics }) {
   return (
-    <>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="nfa-card">
-          <h3 className="mb-4 font-semibold">Requests by Academic Section</h3>
-          <div className="h-64">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="nfa-card p-4 sm:p-5">
+          <h3 className="mb-3 text-sm font-semibold text-slate-900 sm:mb-4 sm:text-base">
+            Requests by Academic Section
+          </h3>
+          <div className="h-52 sm:h-64">
             {analytics.sectionBreakdown.length === 0 ? (
               <p className="flex h-full items-center justify-center text-sm text-slate-500">
                 No academic requests yet
@@ -45,9 +47,11 @@ export function RegistrarCharts({ analytics }: { analytics: DashboardAnalytics }
           </div>
         </div>
 
-        <div className="nfa-card">
-          <h3 className="mb-4 font-semibold">Requests by Club</h3>
-          <div className="h-64">
+        <div className="nfa-card p-4 sm:p-5">
+          <h3 className="mb-3 text-sm font-semibold text-slate-900 sm:mb-4 sm:text-base">
+            Requests by Club
+          </h3>
+          <div className="h-52 sm:h-64">
             {analytics.clubBreakdown.length === 0 ? (
               <p className="flex h-full items-center justify-center text-sm text-slate-500">
                 No club requests yet
@@ -66,9 +70,11 @@ export function RegistrarCharts({ analytics }: { analytics: DashboardAnalytics }
           </div>
         </div>
 
-        <div className="nfa-card">
-          <h3 className="mb-4 font-semibold">Academic vs Club</h3>
-          <div className="h-64">
+        <div className="nfa-card p-4 sm:p-5">
+          <h3 className="mb-3 text-sm font-semibold text-slate-900 sm:mb-4 sm:text-base">
+            Academic vs Club
+          </h3>
+          <div className="h-52 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -90,10 +96,12 @@ export function RegistrarCharts({ analytics }: { analytics: DashboardAnalytics }
           </div>
         </div>
 
-        <div className="nfa-card">
-          <h3 className="mb-1 font-semibold">Section & club totals</h3>
+        <div className="nfa-card p-4 sm:p-5">
+          <h3 className="mb-1 text-sm font-semibold text-slate-900 sm:text-base">
+            Section & club totals
+          </h3>
           <p className="mb-3 text-xs text-slate-500">Submitted requests only</p>
-          <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
+          <div className="max-h-52 space-y-2 overflow-y-auto pr-1 sm:max-h-56">
             {analytics.sectionBreakdown.map((row) => (
               <div key={row.section} className="flex items-center justify-between text-sm">
                 <span className="text-slate-700">{row.section}</span>
@@ -113,9 +121,11 @@ export function RegistrarCharts({ analytics }: { analytics: DashboardAnalytics }
           </div>
         </div>
 
-        <div className="nfa-card">
-          <h3 className="mb-4 font-semibold">Department Performance</h3>
-          <div className="h-64">
+        <div className="nfa-card p-4 sm:p-5">
+          <h3 className="mb-3 text-sm font-semibold text-slate-900 sm:mb-4 sm:text-base">
+            Department Performance
+          </h3>
+          <div className="h-52 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analytics.departmentPerformance}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -128,9 +138,11 @@ export function RegistrarCharts({ analytics }: { analytics: DashboardAnalytics }
           </div>
         </div>
 
-        <div className="nfa-card">
-          <h3 className="mb-4 font-semibold">Status Distribution</h3>
-          <div className="h-64">
+        <div className="nfa-card p-4 sm:p-5">
+          <h3 className="mb-3 text-sm font-semibold text-slate-900 sm:mb-4 sm:text-base">
+            Status Distribution
+          </h3>
+          <div className="h-52 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -152,9 +164,11 @@ export function RegistrarCharts({ analytics }: { analytics: DashboardAnalytics }
           </div>
         </div>
 
-        <div className="nfa-card lg:col-span-2">
-          <h3 className="mb-4 font-semibold">Monthly Request Trend</h3>
-          <div className="h-64">
+        <div className="nfa-card p-4 sm:p-5 lg:col-span-2">
+          <h3 className="mb-3 text-sm font-semibold text-slate-900 sm:mb-4 sm:text-base">
+            Monthly Request Trend
+          </h3>
+          <div className="h-52 sm:h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={analytics.monthlyTrend}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -168,9 +182,11 @@ export function RegistrarCharts({ analytics }: { analytics: DashboardAnalytics }
         </div>
       </div>
 
-      <div className="nfa-card">
-        <h3 className="mb-4 font-semibold">Approval Funnel</h3>
-        <div className="flex flex-wrap gap-6">
+      <div className="nfa-card p-4 sm:p-5">
+        <h3 className="mb-3 text-sm font-semibold text-slate-900 sm:mb-4 sm:text-base">
+          Approval Funnel
+        </h3>
+        <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-6">
           {[
             { label: "Submitted", value: analytics.funnel.submitted, href: "/requests" },
             { label: "Pending", value: analytics.funnel.pending, href: "/requests?pending=1" },
@@ -180,24 +196,24 @@ export function RegistrarCharts({ analytics }: { analytics: DashboardAnalytics }
             <Link
               key={item.label}
               href={item.href}
-              className="rounded-xl px-4 py-2 text-center transition-colors hover:bg-slate-50"
+              className="rounded-xl border border-nfa-border/60 px-3 py-2 text-center transition-colors hover:bg-slate-50 sm:border-0 sm:px-4"
             >
-              <p className="text-2xl font-bold text-nfa-primary">{item.value}</p>
-              <p className="text-sm text-slate-500">{item.label}</p>
+              <p className="text-xl font-bold tabular-nums text-nfa-primary sm:text-2xl">{item.value}</p>
+              <p className="text-xs text-slate-500 sm:text-sm">{item.label}</p>
             </Link>
           ))}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
 export function RegistrarChartsSkeleton() {
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <Bone className="h-72 rounded-xl" />
-      <Bone className="h-72 rounded-xl" />
-      <Bone className="h-72 rounded-xl lg:col-span-2" />
+    <div className="grid gap-4 lg:grid-cols-2">
+      <Bone className="h-64 rounded-xl sm:h-72" />
+      <Bone className="h-64 rounded-xl sm:h-72" />
+      <Bone className="h-64 rounded-xl sm:h-72 lg:col-span-2" />
     </div>
   );
 }

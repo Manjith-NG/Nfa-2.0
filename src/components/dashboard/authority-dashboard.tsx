@@ -17,6 +17,7 @@ async function AuthorityStats({ user }: { user: SessionUser }) {
   const stats = await getDashboardStats(user);
   return (
     <DashboardKpiGrid
+      columns={4}
       items={[
         {
           title: "Pending Queue",
@@ -108,7 +109,7 @@ export async function AuthorityDashboard({
   roleCode: RoleCode;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <DashboardWelcome
         user={user}
         subtitle={`${ROLE_LABELS[roleCode]} approval queue and history`}
@@ -116,7 +117,7 @@ export async function AuthorityDashboard({
         actionLabel="Open Queue"
       />
 
-      <Suspense fallback={<KpiRowSkeleton count={4} />}>
+      <Suspense fallback={<KpiRowSkeleton count={4} columns={4} />}>
         <AuthorityStats user={user} />
       </Suspense>
 

@@ -4,9 +4,20 @@ export function Bone({ className }: { className?: string }) {
   return <div className={cn("animate-pulse rounded-md bg-slate-200/80", className)} />;
 }
 
-export function KpiRowSkeleton({ count = 5 }: { count?: number }) {
+export function KpiRowSkeleton({
+  count = 5,
+  columns = 5,
+}: {
+  count?: number;
+  columns?: 4 | 5;
+}) {
+  const gridClass =
+    columns === 4
+      ? "grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4"
+      : "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5";
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" aria-hidden="true">
+    <div className={gridClass} aria-hidden="true">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
