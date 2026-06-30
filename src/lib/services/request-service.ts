@@ -437,7 +437,19 @@ export async function resubmitAfterResend(user: SessionUser, requestId: string) 
   if (!request) throw new Error("Request not found");
   if (request.raisedById !== user.id) throw new Error("Only the request owner can resubmit");
   if (request.status !== "RESEND") throw new Error("Only requests sent for recheck can be resubmitted");
-  if (!request.currentRoleCode) throw new Error("Cannot determine which authority to return to");
+
+  const lastResend = await prisma.approvalHistory.findFirst({
+    where: { requestId, action: "RESEND" },
+    orderBy: { createdAt: "desc" },
+    select: { stepOrder: true, roleCode: true },
+  });
+
+  if (!lastResend) {
+    throw new Error("Cannot determine which authority to return to");
+  }
+
+  const returnRole = lastResend.roleCode;
+  const returnStep = lastResend.stepOrder;
 
   const validationError = validateRequestFormFields(
     {
@@ -471,12 +483,13 @@ export async function resubmitAfterResend(user: SessionUser, requestId: string) 
   );
   if (validationError) throw new Error(validationError);
 
-  const returnRole = request.currentRoleCode;
-  const returnStep = request.currentStep;
-
   const updated = await prisma.request.update({
     where: { id: requestId },
-    data: { status: "PENDING" },
+    data: {
+      status: "PENDING",
+      currentRoleCode: returnRole,
+      currentStep: returnStep,
+    },
   });
 
   await prisma.approvalHistory.create({
@@ -554,6 +567,13 @@ export async function processApproval(
     user.roleCode === "CLUB_AUTHORITY" ? await getUserClubIds(user.id) : undefined;
 
   if (!canViewRequest(user, request, userClubIds)) throw new Error("Access denied");
+
+  if (request.status === "RESEND") {
+    throw new Error(
+      "This request was sent back for corrections. The faculty must edit and resubmit before you can act."
+    );
+  }
+
   if (!canApproveAtStep(user, request, userClubIds)) {
     throw new Error("You are not authorized to act on this request at the current step");
   }
@@ -585,7 +605,8 @@ export async function processApproval(
     newRoleCode = null;
   } else if (action === "RESEND") {
     newStatus = "RESEND";
-    // Keep currentStep + currentRoleCode — raiser edits, then returns to this authority.
+    // Route back to the raiser; return authority/step are stored on this RESEND history row.
+    newRoleCode = null;
   }
 
   const updated = await prisma.$transaction(async (tx) => {

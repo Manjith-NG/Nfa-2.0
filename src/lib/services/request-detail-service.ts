@@ -185,11 +185,11 @@ export async function getRequestDetailData(
         : null,
     canManageWorkflow:
       user.roleCode === "REGISTRAR" &&
-      ["PENDING", "RESEND", "DRAFT"].includes(request.status),
+      ["PENDING", "DRAFT"].includes(request.status),
     canForward:
       user.roleCode === "REGISTRAR" &&
       request.currentRoleCode === "REGISTRAR" &&
-      ["PENDING", "FORWARDED", "RESEND"].includes(request.status),
+      ["PENDING", "FORWARDED"].includes(request.status),
     canDownloadPdf: canDownloadFullCertificate(user, request),
     canDownloadSummary: canDownloadSummaryPdf(user, request),
     workflowNote: `Approval path: ${workflowLabels} → awaiting final clearance. Short Summary PDF is available for review; Full Approval Certificate downloads after OFC verification (Verified status).`,

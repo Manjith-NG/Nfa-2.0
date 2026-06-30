@@ -184,7 +184,10 @@ export async function assignRequestWorkflow(
 
   const request = await prisma.request.findUnique({ where: { id: requestId } });
   if (!request) throw new Error("Request not found");
-  if (!["DRAFT", "PENDING", "RESEND"].includes(request.status)) {
+  if (request.status === "RESEND") {
+    throw new Error("Cannot change workflow while the request is with faculty for corrections");
+  }
+  if (!["DRAFT", "PENDING"].includes(request.status)) {
     throw new Error("Workflow can only be changed before the request is fully in progress");
   }
 
