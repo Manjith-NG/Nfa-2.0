@@ -3,10 +3,9 @@ import { APP_FULL_NAME, UNIVERSITY_NAME } from "@/lib/constants";
 import type { CertificatePdfData } from "@/lib/pdf/pdf-certificate-shared";
 import {
   buildSummaryNarrative,
-  departmentHeading,
   fmtCertHeaderDate,
 } from "@/lib/pdf/pdf-certificate-shared";
-import { drawUniversityLogoHeader } from "@/lib/pdf/pdf-logo";
+import { drawCertificateHeader } from "@/lib/pdf/pdf-header";
 
 export type RequestSummaryPdfInput = CertificatePdfData & {
   completedAt?: Date | null;
@@ -26,47 +25,20 @@ export function generateRequestSummaryPdf(
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    let contentY = drawUniversityLogoHeader(doc, margin, pageWidth, margin);
+    const bodyY = drawCertificateHeader(doc, {
+      margin,
+      pageWidth,
+      departmentName: data.departmentName,
+      subtitle: `${APP_FULL_NAME} — Short Report`,
+      requestNumber: data.requestNumber,
+      headerDate: data.completedAt ?? data.proposalDate ?? new Date(),
+    });
 
     doc
       .font("Helvetica-Bold")
-      .fontSize(14)
+      .fontSize(10)
       .fillColor("#000000")
-      .text("NOTE FOR APPROVAL OF CHANCELLOR", margin, contentY, {
-        width: pageWidth,
-        align: "center",
-      });
-
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .text(departmentHeading(data.departmentName), margin, doc.y + 6, {
-        width: pageWidth,
-        align: "center",
-      });
-
-    doc
-      .font("Helvetica")
-      .fontSize(9)
-      .text(`${APP_FULL_NAME} — Short Report`, margin, doc.y + 4, {
-        width: pageWidth,
-        align: "center",
-      });
-
-    const headerDate = fmtCertHeaderDate(data.completedAt ?? data.proposalDate);
-    doc.moveDown(0.8);
-    const refY = doc.y;
-    doc.text(`Ref. No: ${data.requestNumber}`, margin, refY, {
-      width: pageWidth / 2,
-      align: "left",
-    });
-    doc.text(`Date: ${headerDate}`, margin, refY, {
-      width: pageWidth,
-      align: "right",
-    });
-
-    doc.moveDown(1.2);
-    doc.font("Helvetica-Bold").fontSize(10).text("Report", margin, doc.y);
+      .text("Report", margin, bodyY);
 
     doc.moveDown(0.4);
     const narrative = buildSummaryNarrative(data);

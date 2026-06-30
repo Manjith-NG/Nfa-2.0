@@ -1,4 +1,8 @@
 import type { RoleCode } from "@prisma/client";
+import {
+  getTrackingDisplayRemarks,
+  getTrackingStatusLabel,
+} from "@/lib/workflow/timeline-labels";
 
 export interface BudgetLineJson {
   particulars?: string;
@@ -154,13 +158,30 @@ export function authorityRows(
   history: PdfApprovalEntry[]
 ): { authority: string; date: string; remarks: string }[] {
   return history
-    .filter((h) => h.action === "APPROVE")
+    .filter((h) => ["APPROVE", "REJECT", "RESEND"].includes(h.action))
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
     .map((h) => ({
       authority: CERT_AUTHORITY_LABELS[h.roleCode] ?? h.roleCode,
       date: fmtCertDate(h.createdAt),
-      remarks: "",
+      remarks: formatAuthorityRemark(h),
     }));
+}
+
+function formatAuthorityRemark(entry: PdfApprovalEntry): string {
+  const displayRemark = getTrackingDisplayRemarks(
+    entry.roleCode,
+    entry.action,
+    entry.remarks
+  );
+  if (displayRemark) return displayRemark;
+
+  const statusLabel = getTrackingStatusLabel(entry.roleCode, entry.action);
+  if (statusLabel) return statusLabel;
+
+  if (entry.remarks?.trim()) return entry.remarks.trim();
+
+  if (entry.action === "REJECT") return "Rejected";
+  return "—";
 }
 
 export function buildSummaryNarrative(data: CertificatePdfData): string {

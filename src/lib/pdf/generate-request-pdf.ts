@@ -5,9 +5,9 @@ import {
   authorityRows,
   budgetRows,
   buildBriefNoteDetails,
-  departmentHeading,
   fmtCertHeaderDate,
 } from "@/lib/pdf/pdf-certificate-shared";
+import { drawCertificateHeader } from "@/lib/pdf/pdf-header";
 import {
   drawMainCertificateRow,
   drawMainCertificateRowWithNested,
@@ -16,7 +16,6 @@ import {
   estimateNestedAuthorityHeight,
   estimateNestedBudgetHeight,
 } from "@/lib/pdf/pdf-table";
-import { drawUniversityLogoHeader } from "@/lib/pdf/pdf-logo";
 
 export type RequestPdfInput = CertificatePdfData & {
   raisedByEmail?: string;
@@ -30,49 +29,24 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
     const chunks: Buffer[] = [];
     const margin = 40;
     const pageWidth = doc.page.width - margin * 2;
-    const colWidths = [32, 108, pageWidth - 32 - 108 - 78, 78];
+    const colWidths = [36, 128, pageWidth - 36 - 128];
 
     doc.on("data", (chunk) => chunks.push(chunk as Buffer));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    const contentY = drawUniversityLogoHeader(doc, margin, pageWidth, margin);
-
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(14)
-      .fillColor("#000000")
-      .text("NOTE FOR APPROVAL OF CHANCELLOR", margin, contentY, {
-        width: pageWidth,
-        align: "center",
-      });
-
-    doc
-      .font("Helvetica-Bold")
-      .fontSize(11)
-      .text(departmentHeading(data.departmentName), margin, doc.y + 6, {
-        width: pageWidth,
-        align: "center",
-      });
-
-    const headerDate = fmtCertHeaderDate(data.completedAt ?? data.proposalDate);
-    doc.moveDown(0.6);
-    const refY = doc.y;
-    doc.font("Helvetica").fontSize(9).text(`Ref. No: ${data.requestNumber}`, margin, refY, {
-      width: pageWidth / 2,
-      align: "left",
+    let y = drawCertificateHeader(doc, {
+      margin,
+      pageWidth,
+      departmentName: data.departmentName,
+      requestNumber: data.requestNumber,
+      headerDate: data.completedAt ?? data.proposalDate ?? new Date(),
     });
-    doc.text(`Date: ${headerDate}`, margin, refY, {
-      width: pageWidth,
-      align: "right",
-    });
-
-    let y = refY + 22;
 
     doc.font("Helvetica-Bold").fontSize(9);
     let cellX = margin;
-    for (const header of ["S.No", "Category", "Details", "Remarks"]) {
-      const idx = ["S.No", "Category", "Details", "Remarks"].indexOf(header);
+    for (const header of ["S.No", "Category", "Details"]) {
+      const idx = ["S.No", "Category", "Details"].indexOf(header);
       doc.rect(cellX, y, colWidths[idx], 20).stroke("#000000");
       doc.text(header, cellX + 4, y + 5, { width: colWidths[idx] - 8 });
       cellX += colWidths[idx];
@@ -86,8 +60,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       colWidths,
       "1",
       "Faculty Member",
-      data.raisedByName,
-      ""
+      data.raisedByName
     );
 
     y = drawMainCertificateRow(
@@ -97,8 +70,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       colWidths,
       "2",
       "Date and Brief Note",
-      buildBriefNoteDetails(data),
-      ""
+      buildBriefNoteDetails(data)
     );
 
     y = drawMainCertificateRow(
@@ -108,8 +80,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       colWidths,
       "3",
       "Need / feasibility",
-      data.needForProposal?.trim() || "—",
-      ""
+      data.needForProposal?.trim() || "—"
     );
 
     const { receivableLines, expenditureLines } = budgetRows(data);
@@ -128,7 +99,6 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       "4",
       "Details of proposed budget",
       budgetNestedHeight,
-      "",
       (nestedX, nestedY, nestedWidth) =>
         drawNestedBudgetTable(
           doc,
@@ -147,8 +117,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       colWidths,
       "5",
       "NAAC Criterion",
-      data.naacCategory?.trim() || "—",
-      ""
+      data.naacCategory?.trim() || "—"
     );
 
     y = drawMainCertificateRow(
@@ -158,8 +127,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       colWidths,
       "6",
       "Metrics",
-      data.metricsCategory?.trim() || "—",
-      ""
+      data.metricsCategory?.trim() || "—"
     );
 
     y = drawMainCertificateRow(
@@ -169,12 +137,15 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       colWidths,
       "7",
       "Metric Description",
-      data.financialDescription?.trim() || data.title || "—",
-      ""
+      data.financialDescription?.trim() || data.title || "—"
     );
 
     const authorities = authorityRows(data.approvalHistory);
-    const authorityNestedHeight = estimateNestedAuthorityHeight(authorities);
+    const authorityNestedHeight = estimateNestedAuthorityHeight(
+      doc,
+      colWidths[2] - 8,
+      authorities
+    );
 
     if (y + authorityNestedHeight + 60 > doc.page.height - margin) {
       doc.addPage();
@@ -187,9 +158,8 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       y,
       colWidths,
       "8",
-      "Authorities",
+      "Approval tracking",
       authorityNestedHeight,
-      "",
       (nestedX, nestedY, nestedWidth) =>
         drawNestedAuthorityTable(doc, nestedX, nestedY, nestedWidth, authorities)
     );
