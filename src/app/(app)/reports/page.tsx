@@ -40,7 +40,7 @@ export default async function ReportsPage() {
             <div>
               <h3 className="font-semibold text-slate-900">Per-request PDFs</h3>
               <p className="mt-1 text-sm text-slate-500">
-                Open any verified request to download a short summary or full approval
+                Open any verified request to download a short report or full approval
                 certificate with section, event dates, timestamps, and authority remarks.
               </p>
             </div>

@@ -83,7 +83,7 @@ export async function GET(
       {
         error:
           type === "summary"
-            ? "Short summary is available after the request is submitted, or anytime for Registrar and OFC."
+            ? "Short report is available after the request is submitted, or anytime for Registrar and OFC."
             : "Full approval certificate is available only after OFC verification (Verified status).",
       },
       { status: 403 }
@@ -168,7 +168,7 @@ export async function GET(
 
 
 
-      const filename = `${request.requestNumber.replace(/\s+/g, "-")}-summary.pdf`;
+      const filename = `${request.requestNumber.replace(/\s+/g, "-")}-short-report.pdf`;
 
       return new NextResponse(new Uint8Array(pdf), {
 

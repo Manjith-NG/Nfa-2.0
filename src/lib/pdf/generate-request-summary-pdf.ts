@@ -6,6 +6,7 @@ import {
   departmentHeading,
   fmtCertHeaderDate,
 } from "@/lib/pdf/pdf-certificate-shared";
+import { drawUniversityLogoHeader } from "@/lib/pdf/pdf-logo";
 
 export type RequestSummaryPdfInput = CertificatePdfData & {
   completedAt?: Date | null;
@@ -25,11 +26,13 @@ export function generateRequestSummaryPdf(
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
+    let contentY = drawUniversityLogoHeader(doc, margin, pageWidth, margin);
+
     doc
       .font("Helvetica-Bold")
       .fontSize(14)
       .fillColor("#000000")
-      .text("NOTE FOR APPROVAL OF CHANCELLOR", margin, margin, {
+      .text("NOTE FOR APPROVAL OF CHANCELLOR", margin, contentY, {
         width: pageWidth,
         align: "center",
       });
@@ -45,7 +48,7 @@ export function generateRequestSummaryPdf(
     doc
       .font("Helvetica")
       .fontSize(9)
-      .text(`${APP_FULL_NAME} — Short Summary`, margin, doc.y + 4, {
+      .text(`${APP_FULL_NAME} — Short Report`, margin, doc.y + 4, {
         width: pageWidth,
         align: "center",
       });
@@ -63,7 +66,7 @@ export function generateRequestSummaryPdf(
     });
 
     doc.moveDown(1.2);
-    doc.font("Helvetica-Bold").fontSize(10).text("Summary", margin, doc.y);
+    doc.font("Helvetica-Bold").fontSize(10).text("Report", margin, doc.y);
 
     doc.moveDown(0.4);
     const narrative = buildSummaryNarrative(data);

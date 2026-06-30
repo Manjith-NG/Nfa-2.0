@@ -16,6 +16,7 @@ import {
   estimateNestedAuthorityHeight,
   estimateNestedBudgetHeight,
 } from "@/lib/pdf/pdf-table";
+import { drawUniversityLogoHeader } from "@/lib/pdf/pdf-logo";
 
 export type RequestPdfInput = CertificatePdfData & {
   raisedByEmail?: string;
@@ -35,11 +36,13 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
+    const contentY = drawUniversityLogoHeader(doc, margin, pageWidth, margin);
+
     doc
       .font("Helvetica-Bold")
       .fontSize(14)
       .fillColor("#000000")
-      .text("NOTE FOR APPROVAL OF CHANCELLOR", margin, margin, {
+      .text("NOTE FOR APPROVAL OF CHANCELLOR", margin, contentY, {
         width: pageWidth,
         align: "center",
       });

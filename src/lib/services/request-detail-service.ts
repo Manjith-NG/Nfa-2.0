@@ -192,7 +192,7 @@ export async function getRequestDetailData(
       ["PENDING", "FORWARDED"].includes(request.status),
     canDownloadPdf: canDownloadFullCertificate(user, request),
     canDownloadSummary: canDownloadSummaryPdf(user, request),
-    workflowNote: `Approval path: ${workflowLabels} → awaiting final clearance. Short Summary PDF is available for review; Full Approval Certificate downloads after OFC verification (Verified status).`,
+    workflowNote: `Approval path: ${workflowLabels} → awaiting final clearance. Short Report PDF is available for review; Full Approval Certificate downloads after OFC verification (Verified status).`,
     remarks: request.remarks.map((r) => ({
       id: r.id,
       content: r.content,

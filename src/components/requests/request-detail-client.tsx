@@ -74,7 +74,7 @@ export function RequestDetailClient({
   async function handleDownload(type: "summary" | "full") {
     setDownloading(type);
     try {
-      const suffix = type === "summary" ? "summary.pdf" : "approval.pdf";
+      const suffix = type === "summary" ? "short-report.pdf" : "approval.pdf";
       await downloadFromApi(`/api/requests/${id}/pdf?type=${type}`, `${data.requestNumber}-${suffix}`);
     } catch (e) {
       alert(e instanceof Error ? e.message : "Download failed");
@@ -161,7 +161,7 @@ export function RequestDetailClient({
           <div>
             <h3 className="font-semibold text-slate-900">Documents &amp; PDFs</h3>
             <p className="mt-1 text-sm text-slate-500">
-              <strong>Short Summary</strong> — one-page overview for quick review.{" "}
+              <strong>Short Report</strong> — one-page overview for quick review.{" "}
               <strong>Full Certificate</strong> — complete signed record after OFC verification.
             </p>
           </div>
@@ -181,7 +181,7 @@ export function RequestDetailClient({
                   )}
                 </div>
                 <div>
-                  <p className="font-semibold text-nfa-primary">Short Summary PDF</p>
+                  <p className="font-semibold text-nfa-primary">Short Report PDF</p>
                   <p className="mt-0.5 text-xs text-slate-600">
                     Title, dates, budget totals, and current status on one page.
                   </p>
@@ -193,7 +193,7 @@ export function RequestDetailClient({
                   <FileText className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="font-semibold text-slate-500">Short Summary PDF</p>
+                  <p className="font-semibold text-slate-500">Short Report PDF</p>
                   <p className="mt-0.5 text-xs text-slate-500">Available after the request is submitted.</p>
                 </div>
               </div>
