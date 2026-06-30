@@ -1,4 +1,3 @@
-import { ROLE_LABELS } from "@/lib/constants";
 import type { SessionUser } from "@/types";
 
 function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
@@ -21,10 +20,7 @@ export function ProfileDetails({ user }: { user: SessionUser }) {
       <dl className="mt-4 divide-y divide-nfa-border/70">
         <DetailRow label="Full name" value={fullName} />
         <DetailRow label="Email" value={user.email} />
-        <DetailRow label="Employee ID" value={user.employeeId} />
-        <DetailRow label="Role" value={ROLE_LABELS[user.roleCode] ?? user.roleName} />
         <DetailRow label="Department" value={user.departmentName} />
-        <DetailRow label="Department code" value={user.departmentCode} />
         <DetailRow label="Designation" value={user.designationName} />
         <DetailRow label="Position" value={user.positionName} />
       </dl>

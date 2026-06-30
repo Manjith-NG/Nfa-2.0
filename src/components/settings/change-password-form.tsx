@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { Loader2, KeyRound } from "lucide-react";
 
-export function ChangePasswordForm() {
+export function ChangePasswordForm({
+  onSuccess,
+  onCancel,
+}: {
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -36,6 +42,9 @@ export function ChangePasswordForm() {
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      if (onSuccess) {
+        window.setTimeout(onSuccess, 700);
+      }
     } catch {
       setError("Could not update password. Please try again.");
     } finally {
@@ -44,7 +53,7 @@ export function ChangePasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-md space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label htmlFor="current-password" className="nfa-label">
           Current password
@@ -100,19 +109,31 @@ export function ChangePasswordForm() {
         <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">{success}</p>
       )}
 
-      <button type="submit" className="nfa-btn-primary" disabled={loading}>
-        {loading ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Updating…
-          </>
-        ) : (
-          <>
-            <KeyRound className="h-4 w-4" />
-            Change password
-          </>
+      <div className="flex flex-wrap justify-end gap-3 pt-1">
+        {onCancel && (
+          <button
+            type="button"
+            className="nfa-btn-secondary"
+            disabled={loading}
+            onClick={onCancel}
+          >
+            Cancel
+          </button>
         )}
-      </button>
+        <button type="submit" className="nfa-btn-primary" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Updating…
+            </>
+          ) : (
+            <>
+              <KeyRound className="h-4 w-4" />
+              Update password
+            </>
+          )}
+        </button>
+      </div>
     </form>
   );
 }
