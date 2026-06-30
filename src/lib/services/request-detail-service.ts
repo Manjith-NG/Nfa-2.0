@@ -63,7 +63,13 @@ export type RequestDetailData = {
     id: string;
     content: string;
     createdAt: string;
-    author: { id: string; firstName: string; lastName: string };
+    author: {
+      id: string;
+      firstName: string;
+      lastName: string;
+      roleCode: RoleCode;
+      roleName: string;
+    };
   }[];
 };
 
@@ -80,7 +86,16 @@ export async function getRequestDetailData(
       academicSection: { select: { name: true } },
       remarks: {
         orderBy: { createdAt: "desc" },
-        include: { author: { select: { id: true, firstName: true, lastName: true } } },
+        include: {
+          author: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              role: { select: { code: true, name: true } },
+            },
+          },
+        },
       },
       approvalHistory: {
         orderBy: { createdAt: "asc" },
@@ -197,7 +212,13 @@ export async function getRequestDetailData(
       id: r.id,
       content: r.content,
       createdAt: r.createdAt.toISOString(),
-      author: r.author,
+      author: {
+        id: r.author.id,
+        firstName: r.author.firstName,
+        lastName: r.author.lastName,
+        roleCode: r.author.role.code,
+        roleName: ROLE_LABELS[r.author.role.code] ?? r.author.role.name,
+      },
     })),
   };
 }

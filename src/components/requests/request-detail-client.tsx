@@ -162,7 +162,7 @@ export function RequestDetailClient({
             <h3 className="font-semibold text-slate-900">Documents &amp; PDFs</h3>
             <p className="mt-1 text-sm text-slate-500">
               <strong>Short Report</strong> — one-page overview for quick review.{" "}
-              <strong>Full Certificate</strong> — complete signed record after OFC verification.
+              <strong>Full Certificate</strong> — complete approval record after OFC verification.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -443,8 +443,11 @@ export function RequestDetailClient({
                         onClick={() => setSelectedUserId(r.author.id)}
                       >
                         {r.author.firstName} {r.author.lastName}
-                      </button>{" "}
-                      · {formatDate(r.createdAt)}
+                      </button>
+                      <span className="text-slate-400"> · </span>
+                      <span className="font-medium text-slate-600">{r.author.roleName}</span>
+                      <span className="text-slate-400"> · </span>
+                      {formatDate(r.createdAt)}
                     </p>
                   </div>
                 ))
