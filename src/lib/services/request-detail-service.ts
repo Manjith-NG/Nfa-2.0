@@ -4,6 +4,8 @@ import { getUserClubIds } from "@/lib/club-access";
 import { buildTimeline, type TimelineStepResult } from "@/lib/workflow/engine";
 import { getWorkflowStepsForRequest } from "@/lib/workflow/resolve";
 import { fullName } from "@/lib/utils";
+import { ROLE_LABELS } from "@/lib/constants";
+import { resendActionLabel } from "@/lib/workflow/timeline-labels";
 import {
   canDownloadFullCertificate,
   canDownloadSummaryPdf,
@@ -45,6 +47,14 @@ export type RequestDetailData = {
   canDownloadSummary?: boolean;
   canManageWorkflow?: boolean;
   canForward?: boolean;
+  canEdit?: boolean;
+  canResubmit?: boolean;
+  resendInfo?: {
+    roleCode: RoleCode;
+    roleName: string;
+    actionLabel: string;
+    remarks?: string;
+  } | null;
   workflowSteps?: { roleCode: RoleCode; stepLabel: string }[];
   currentRoleCode?: RoleCode | null;
   workflowNote?: string;
@@ -120,6 +130,12 @@ export async function getRequestDetailData(
     .map((s) => s.stepLabel.replace(" Approval", ""))
     .join(" → ");
 
+  const latestResend = [...request.approvalHistory]
+    .reverse()
+    .find((h) => h.action === "RESEND");
+
+  const isOwner = request.raisedById === user.id;
+
   return {
     id: request.id,
     requestNumber: request.requestNumber,
@@ -155,7 +171,18 @@ export async function getRequestDetailData(
     raisedById: request.raisedById,
     canApprove:
       canApproveAtStep(user, request, userClubIds) &&
-      ["PENDING", "UNDER_REVIEW", "FORWARDED", "RESEND"].includes(request.status),
+      ["PENDING", "UNDER_REVIEW", "FORWARDED"].includes(request.status),
+    canEdit: isOwner && ["DRAFT", "RESEND"].includes(request.status),
+    canResubmit: isOwner && request.status === "RESEND",
+    resendInfo:
+      request.status === "RESEND" && latestResend
+        ? {
+            roleCode: latestResend.roleCode,
+            roleName: ROLE_LABELS[latestResend.roleCode] ?? latestResend.roleCode,
+            actionLabel: resendActionLabel(latestResend.roleCode),
+            remarks: latestResend.remarks ?? undefined,
+          }
+        : null,
     canManageWorkflow:
       user.roleCode === "REGISTRAR" &&
       ["PENDING", "RESEND", "DRAFT"].includes(request.status),

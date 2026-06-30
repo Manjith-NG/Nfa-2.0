@@ -66,7 +66,35 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function RequestForm({ user }: { user: SessionUser }) {
+export function RequestForm({
+  user,
+  editRequestId,
+  initialEditData,
+}: {
+  user: SessionUser;
+  editRequestId?: string;
+  initialEditData?: {
+    status: "DRAFT" | "RESEND";
+    category: "ACADEMIC" | "CLUB";
+    academicSectionId?: string | null;
+    clubId?: string | null;
+    departmentId: string;
+    title: string;
+    briefNote?: string | null;
+    needForProposal?: string | null;
+    proposalDate?: string | null;
+    eventStartDate?: string | null;
+    eventEndDate?: string | null;
+    links?: string | null;
+    naacCategory?: string | null;
+    metricsCategory?: string | null;
+    financialDescription?: string | null;
+    expenditures?: BudgetLine[];
+    receivables?: BudgetLine[];
+    grandTotalExpenditure?: number | null;
+    grandTotalReceivable?: number | null;
+  };
+}) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -75,36 +103,51 @@ export function RequestForm({ user }: { user: SessionUser }) {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [naacCriteria, setNaacCriteria] = useState<NaacCriterionOption[]>([]);
   const [metrics, setMetrics] = useState<MetricOption[]>([]);
-  const [category, setCategory] = useState<"ACADEMIC" | "CLUB">("ACADEMIC");
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowPreviewStep[]>([]);
   const [workflowAuthorities, setWorkflowAuthorities] = useState<WorkflowAuthority[]>([]);
   const [workflowLoading, setWorkflowLoading] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [editStatus] = useState<"DRAFT" | "RESEND" | null>(initialEditData?.status ?? null);
 
   const [form, setForm] = useState({
-    academicSectionId: "",
-    departmentId: user.departmentId ?? "",
-    title: "",
-    briefNote: "",
-    needForProposal: "",
+    academicSectionId: initialEditData?.academicSectionId ?? "",
+    departmentId: initialEditData?.departmentId ?? user.departmentId ?? "",
+    title: initialEditData?.title ?? "",
+    briefNote: initialEditData?.briefNote ?? "",
+    needForProposal: initialEditData?.needForProposal ?? "",
     naacCriterionId: "",
     metricId: "",
-    naacCategory: "",
-    metricsCategory: "",
-    proposalDate: "",
-    eventStartDate: "",
-    eventEndDate: "",
-    links: "",
-    clubId: "",
-    financialDescription: "",
+    naacCategory: initialEditData?.naacCategory ?? "",
+    metricsCategory: initialEditData?.metricsCategory ?? "",
+    proposalDate: initialEditData?.proposalDate?.slice(0, 10) ?? "",
+    eventStartDate: initialEditData?.eventStartDate?.slice(0, 10) ?? "",
+    eventEndDate: initialEditData?.eventEndDate?.slice(0, 10) ?? "",
+    links: initialEditData?.links ?? "",
+    clubId: initialEditData?.clubId ?? "",
+    financialDescription: initialEditData?.financialDescription ?? "",
   });
 
-  const [expenditures, setExpenditures] = useState<BudgetLine[]>(createDefaultLines);
-  const [receivables, setReceivables] = useState<BudgetLine[]>(createDefaultLines);
-  const [grandExp, setGrandExp] = useState("");
-  const [grandRec, setGrandRec] = useState("");
+  const [category, setCategory] = useState<"ACADEMIC" | "CLUB">(
+    initialEditData?.category ?? "ACADEMIC"
+  );
+  const [expenditures, setExpenditures] = useState<BudgetLine[]>(
+    initialEditData?.expenditures?.length ? initialEditData.expenditures : createDefaultLines
+  );
+  const [receivables, setReceivables] = useState<BudgetLine[]>(
+    initialEditData?.receivables?.length ? initialEditData.receivables : createDefaultLines
+  );
+  const [grandExp, setGrandExp] = useState(
+    initialEditData?.grandTotalExpenditure != null
+      ? String(initialEditData.grandTotalExpenditure)
+      : ""
+  );
+  const [grandRec, setGrandRec] = useState(
+    initialEditData?.grandTotalReceivable != null
+      ? String(initialEditData.grandTotalReceivable)
+      : ""
+  );
 
   const facultyName = `${user.firstName} ${user.lastName}`;
   const departmentName = user.departmentName ?? "—";
@@ -321,6 +364,29 @@ export function RequestForm({ user }: { user: SessionUser }) {
     );
   }
 
+  function buildPayload(submitRequest: boolean) {
+    return {
+      title: form.title,
+      description: form.briefNote,
+      briefNote: form.briefNote,
+      needForProposal: form.needForProposal,
+      proposalDate: form.proposalDate || undefined,
+      eventStartDate: form.eventStartDate || undefined,
+      eventEndDate: form.eventEndDate || undefined,
+      links: form.links || undefined,
+      naacCategory: form.naacCategory,
+      metricsCategory: form.metricsCategory,
+      expenditures: serializeLines(expenditures),
+      receivables: serializeLines(receivables),
+      grandTotalExpenditure: expTotal,
+      grandTotalReceivable: recTotal,
+      budgetDifference: difference,
+      budgetAmount: expTotal,
+      financialDescription: form.financialDescription || undefined,
+      submit: submitRequest,
+    };
+  }
+
   async function submit(submitRequest: boolean) {
     const validationError = validateForm(submitRequest);
     if (validationError) {
@@ -330,34 +396,57 @@ export function RequestForm({ user }: { user: SessionUser }) {
 
     setLoading(true);
     try {
+      if (editRequestId) {
+        const patchRes = await fetch(`/api/requests/${editRequestId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(buildPayload(false)),
+        });
+        const patchData = await patchRes.json();
+        if (!patchData.success) {
+          alert(patchData.error ?? "Failed to save changes");
+          return;
+        }
+
+        if (pendingFiles.length > 0) {
+          await uploadAttachments(editRequestId);
+        }
+
+        if (editStatus === "RESEND" && submitRequest) {
+          const resubmitRes = await fetch(`/api/requests/${editRequestId}/resubmit`, {
+            method: "POST",
+          });
+          const resubmitData = await resubmitRes.json();
+          if (!resubmitData.success) {
+            alert(resubmitData.error ?? "Failed to resubmit");
+            return;
+          }
+        } else if (editStatus === "DRAFT" && submitRequest) {
+          const submitRes = await fetch(`/api/requests/${editRequestId}/submit`, {
+            method: "POST",
+          });
+          const submitData = await submitRes.json();
+          if (!submitData.success) {
+            alert(submitData.error ?? "Failed to submit");
+            return;
+          }
+        }
+
+        router.push(`/requests/${editRequestId}`);
+        return;
+      }
+
       const needsUploadBeforeSubmit = submitRequest && pendingFiles.length > 0;
 
       const res = await fetch("/api/requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: form.title,
-          description: form.briefNote,
+          ...buildPayload(needsUploadBeforeSubmit ? false : submitRequest),
           category,
           academicSectionId: category === "ACADEMIC" ? form.academicSectionId : undefined,
           departmentId: form.departmentId || undefined,
           clubId: category === "CLUB" ? form.clubId : undefined,
-          briefNote: form.briefNote,
-          needForProposal: form.needForProposal,
-          proposalDate: form.proposalDate || undefined,
-          eventStartDate: form.eventStartDate || undefined,
-          eventEndDate: form.eventEndDate || undefined,
-          links: form.links || undefined,
-          naacCategory: form.naacCategory,
-          metricsCategory: form.metricsCategory,
-          expenditures: serializeLines(expenditures),
-          receivables: serializeLines(receivables),
-          grandTotalExpenditure: expTotal,
-          grandTotalReceivable: recTotal,
-          budgetDifference: difference,
-          budgetAmount: expTotal,
-          financialDescription: form.financialDescription || undefined,
-          submit: needsUploadBeforeSubmit ? false : submitRequest,
         }),
       });
       const data = await res.json();
@@ -793,7 +882,7 @@ export function RequestForm({ user }: { user: SessionUser }) {
             disabled={loading}
             onClick={() => submit(false)}
           >
-            Save Draft
+            {editRequestId ? "Save Changes" : "Save Draft"}
           </button>
           <button
             type="button"
@@ -802,7 +891,11 @@ export function RequestForm({ user }: { user: SessionUser }) {
             onClick={() => submit(true)}
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-            Submit
+            {editStatus === "RESEND"
+              ? "Resubmit"
+              : editRequestId
+                ? "Submit"
+                : "Submit"}
           </button>
         </div>
       </div>

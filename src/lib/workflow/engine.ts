@@ -1,6 +1,10 @@
 import type { RoleCode, RequestStatus } from "@prisma/client";
 import type { WorkflowPathStep } from "@/lib/workflow/types";
 import { OFC_FINAL_CLEARANCE_LABEL } from "@/lib/constants";
+import {
+  getTrackingDisplayRemarks,
+  getTrackingStatusLabel,
+} from "@/lib/workflow/timeline-labels";
 
 export interface WorkflowStep {
   stepOrder: number;
@@ -15,6 +19,8 @@ export interface TimelineStepResult {
   status: "completed" | "current" | "pending" | "rejected" | "skipped";
   actorName?: string;
   remarks?: string;
+  trackingStatus?: string;
+  displayRemarks?: string;
   completedAt?: string;
   hideRoleLabel?: boolean;
 }
@@ -90,7 +96,12 @@ function buildVisibleStepTimeline(
         ...step,
         status: isReject ? "rejected" : "completed",
         actorName: record.actorName,
-        remarks: record.remarks ?? undefined,
+        trackingStatus: getTrackingStatusLabel(record.roleCode, record.action),
+        displayRemarks: getTrackingDisplayRemarks(
+          record.roleCode,
+          record.action,
+          record.remarks
+        ),
         completedAt: record.createdAt.toISOString(),
       };
     }
@@ -137,7 +148,7 @@ function buildFinalClearanceStep(
       stepLabel: VERIFIED_LABEL,
       status: "completed",
       actorName: ofcRecord?.actorName,
-      remarks: ofcRecord?.remarks ?? undefined,
+      trackingStatus: "Verified",
       completedAt: ofcRecord?.createdAt.toISOString(),
       hideRoleLabel: true,
     };
@@ -153,7 +164,10 @@ function buildFinalClearanceStep(
       stepLabel: FINAL_CLEARANCE_LABEL,
       status: "rejected",
       actorName: ofcRecord?.actorName,
-      remarks: ofcRecord?.remarks ?? undefined,
+      trackingStatus: "Rejected",
+      displayRemarks: ofcRecord
+        ? getTrackingDisplayRemarks(ofcRecord.roleCode, ofcRecord.action, ofcRecord.remarks)
+        : undefined,
       completedAt: ofcRecord?.createdAt.toISOString(),
       hideRoleLabel: true,
     };

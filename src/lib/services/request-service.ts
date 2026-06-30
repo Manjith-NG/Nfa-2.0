@@ -6,7 +6,8 @@ import type {
   RoleCode,
   Prisma,
 } from "@prisma/client";
-import { generateRequestNumber, fullName } from "@/lib/utils";
+import { fullName } from "@/lib/utils";
+import { generateRequestNumber } from "@/lib/services/request-number";
 import {
   getInitialStep,
   getNextStep,
@@ -103,7 +104,20 @@ export async function createRequest(
     if (validationError) throw new Error(validationError);
   }
 
-  const requestNumber = generateRequestNumber();
+  const [department, academicSection, club] = await Promise.all([
+    prisma.department.findUniqueOrThrow({ where: { id: departmentId } }),
+    data.academicSectionId
+      ? prisma.academicSectionMaster.findUnique({ where: { id: data.academicSectionId } })
+      : null,
+    data.clubId ? prisma.club.findUnique({ where: { id: data.clubId } }) : null,
+  ]);
+
+  const requestNumber = await generateRequestNumber({
+    category: data.category,
+    departmentCode: department.code,
+    academicSectionCode: academicSection?.code,
+    clubCode: club?.code,
+  });
   let currentStep = 0;
   let currentRoleCode: RoleCode | null = null;
   let status: RequestStatus = "DRAFT";
@@ -352,6 +366,177 @@ export async function submitDraftRequest(user: SessionUser, requestId: string) {
   return updated;
 }
 
+type RequestUpdatePayload = {
+  title?: string;
+  description?: string;
+  briefNote?: string;
+  needForProposal?: string;
+  proposalDate?: Date;
+  eventStartDate?: Date;
+  eventEndDate?: Date;
+  links?: string;
+  naacCategory?: string;
+  metricsCategory?: string;
+  budgetAmount?: number;
+  budgetPurpose?: string;
+  eventDate?: Date;
+  venue?: string;
+  expenditures?: unknown;
+  receivables?: unknown;
+  grandTotalExpenditure?: number;
+  grandTotalReceivable?: number;
+  budgetDifference?: number;
+  financialDescription?: string;
+};
+
+export async function updateRequest(
+  user: SessionUser,
+  requestId: string,
+  data: RequestUpdatePayload
+) {
+  const request = await prisma.request.findUnique({ where: { id: requestId } });
+  if (!request) throw new Error("Request not found");
+  if (request.raisedById !== user.id) throw new Error("Only the request owner can edit");
+  if (!["DRAFT", "RESEND"].includes(request.status)) {
+    throw new Error("This request cannot be edited in its current status");
+  }
+
+  return prisma.request.update({
+    where: { id: requestId },
+    data: {
+      title: data.title,
+      description: data.description,
+      briefNote: data.briefNote,
+      needForProposal: data.needForProposal,
+      proposalDate: data.proposalDate,
+      eventStartDate: data.eventStartDate,
+      eventEndDate: data.eventEndDate,
+      links: data.links,
+      naacCategory: data.naacCategory,
+      metricsCategory: data.metricsCategory,
+      budgetAmount: data.budgetAmount,
+      budgetPurpose: data.budgetPurpose,
+      eventDate: data.eventDate,
+      venue: data.venue,
+      expenditures: data.expenditures as Prisma.InputJsonValue | undefined,
+      receivables: data.receivables as Prisma.InputJsonValue | undefined,
+      grandTotalExpenditure: data.grandTotalExpenditure,
+      grandTotalReceivable: data.grandTotalReceivable,
+      budgetDifference: data.budgetDifference,
+      financialDescription: data.financialDescription,
+    },
+  });
+}
+
+export async function resubmitAfterResend(user: SessionUser, requestId: string) {
+  const request = await prisma.request.findUnique({
+    where: { id: requestId },
+    include: { department: true, raisedBy: true, club: true },
+  });
+
+  if (!request) throw new Error("Request not found");
+  if (request.raisedById !== user.id) throw new Error("Only the request owner can resubmit");
+  if (request.status !== "RESEND") throw new Error("Only requests sent for recheck can be resubmitted");
+  if (!request.currentRoleCode) throw new Error("Cannot determine which authority to return to");
+
+  const validationError = validateRequestFormFields(
+    {
+      briefNote: request.briefNote ?? "",
+      needForProposal: request.needForProposal ?? "",
+      proposalDate: request.proposalDate?.toISOString().slice(0, 10),
+      eventStartDate: request.eventStartDate?.toISOString().slice(0, 10),
+      eventEndDate: request.eventEndDate?.toISOString().slice(0, 10),
+      submit: true,
+    },
+    {
+      expenditures: Array.isArray(request.expenditures)
+        ? (request.expenditures as { particulars: string; remarks?: string }[]).map((l) => ({
+            id: "",
+            particulars: l.particulars ?? "",
+            amount: "",
+            quantity: "",
+            remarks: l.remarks ?? "",
+          }))
+        : [],
+      receivables: Array.isArray(request.receivables)
+        ? (request.receivables as { particulars: string; remarks?: string }[]).map((l) => ({
+            id: "",
+            particulars: l.particulars ?? "",
+            amount: "",
+            quantity: "",
+            remarks: l.remarks ?? "",
+          }))
+        : [],
+    }
+  );
+  if (validationError) throw new Error(validationError);
+
+  const returnRole = request.currentRoleCode;
+  const returnStep = request.currentStep;
+
+  const updated = await prisma.request.update({
+    where: { id: requestId },
+    data: { status: "PENDING" },
+  });
+
+  await prisma.approvalHistory.create({
+    data: {
+      requestId,
+      stepOrder: returnStep,
+      roleCode: user.roleCode,
+      action: "SUBMIT",
+      actorId: user.id,
+      previousStatus: "RESEND",
+      newStatus: "PENDING",
+      remarks: "Request updated and resubmitted after recheck",
+    },
+  });
+
+  const link = `/requests/${requestId}`;
+  const message = `${request.requestNumber}: ${request.title}`;
+
+  if (returnRole === "HOD" && request.departmentId) {
+    await notifyApprovers({
+      roleCode: "HOD",
+      departmentId: request.departmentId,
+      title: "Request resubmitted after recheck",
+      message,
+      link,
+    });
+  } else if (returnRole === "CLUB_AUTHORITY" && request.clubId) {
+    await notifyClubAuthority(request.clubId, {
+      title: "Club request resubmitted after recheck",
+      message,
+      link,
+    });
+  } else {
+    await notifyApprovers({
+      roleCode: returnRole,
+      title: "Request resubmitted after recheck",
+      message,
+      link,
+    });
+  }
+
+  await createNotification({
+    userId: user.id,
+    type: "REQUEST_SUBMITTED",
+    title: "Request resubmitted",
+    message: `Your request ${request.requestNumber} was sent back to ${returnRole} for review.`,
+    link,
+  });
+
+  await createAuditLog({
+    userId: user.id,
+    action: "REQUEST_RESUBMIT",
+    entityType: "Request",
+    entityId: requestId,
+    newValue: { status: "PENDING", returnRole, returnStep },
+  });
+
+  return updated;
+}
+
 export async function processApproval(
   user: SessionUser,
   requestId: string,
@@ -400,6 +585,7 @@ export async function processApproval(
     newRoleCode = null;
   } else if (action === "RESEND") {
     newStatus = "RESEND";
+    // Keep currentStep + currentRoleCode — raiser edits, then returns to this authority.
   }
 
   const updated = await prisma.$transaction(async (tx) => {
@@ -569,7 +755,7 @@ export function buildRequestWhere(
     if (filters?.pendingForMe) {
       where.departmentId = user.departmentId ?? undefined;
       where.currentRoleCode = "HOD";
-      where.status = { in: ["PENDING", "UNDER_REVIEW", "FORWARDED", "RESEND"] };
+      where.status = { in: ["PENDING", "UNDER_REVIEW", "FORWARDED"] };
     } else {
       where.OR = [
         { raisedById: user.id },
@@ -588,17 +774,17 @@ export function buildRequestWhere(
     };
     if (filters?.pendingForMe) {
       where.currentRoleCode = "CLUB_AUTHORITY";
-      where.status = { in: ["PENDING", "UNDER_REVIEW", "FORWARDED", "RESEND"] };
+      where.status = { in: ["PENDING", "UNDER_REVIEW", "FORWARDED"] };
     }
   } else if (["IQAC", "PMSEB", "HR", "COE"].includes(user.roleCode)) {
     if (filters?.pendingForMe) {
       where.currentRoleCode = user.roleCode;
-      where.status = { in: ["PENDING", "UNDER_REVIEW", "FORWARDED", "RESEND"] };
+      where.status = { in: ["PENDING", "UNDER_REVIEW", "FORWARDED"] };
     }
   } else if (["REGISTRAR", "OFC"].includes(user.roleCode)) {
     if (filters?.pendingForMe) {
       where.currentRoleCode = user.roleCode;
-      where.status = { in: ["PENDING", "UNDER_REVIEW", "FORWARDED", "RESEND"] };
+      where.status = { in: ["PENDING", "UNDER_REVIEW", "FORWARDED"] };
     }
   }
 

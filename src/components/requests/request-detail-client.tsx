@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -235,7 +236,29 @@ export function RequestDetailClient({
         </div>
       )}
 
-      {data.workflowNote && (
+      {data.resendInfo && (
+        <div className="rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
+          <p className="font-semibold">
+            Sent back for {data.resendInfo.actionLabel.toLowerCase()} by {data.resendInfo.roleName}
+          </p>
+          {data.resendInfo.remarks && (
+            <p className="mt-1 text-yellow-800">{data.resendInfo.remarks}</p>
+          )}
+          <p className="mt-2 text-yellow-800">
+            Edit your request and resubmit. It will return to {data.resendInfo.roleName} for review.
+          </p>
+          {data.canEdit && (
+            <Link
+              href={`/requests/${id}/edit`}
+              className="mt-3 inline-block rounded-lg bg-yellow-700 px-4 py-2 text-sm font-medium text-white hover:bg-yellow-800"
+            >
+              Edit & Resubmit
+            </Link>
+          )}
+        </div>
+      )}
+
+      {data.workflowNote && !data.resendInfo && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
           {data.workflowNote}
         </div>
@@ -431,8 +454,8 @@ export function RequestDetailClient({
         </div>
 
         <div className="nfa-card">
-          <h3 className="mb-6 font-semibold">Approval Timeline</h3>
-          <ApprovalTimeline steps={data.timeline} />
+          <h3 className="mb-6 font-semibold">Approval Tracking</h3>
+          <ApprovalTimeline steps={data.timeline} requestNumber={data.requestNumber} />
         </div>
       </div>
 

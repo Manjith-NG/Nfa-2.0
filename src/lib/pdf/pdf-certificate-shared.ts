@@ -63,9 +63,10 @@ export function fmtCertHeaderDate(d?: Date | null): string {
   return `${pad(dt.getDate())}/${pad(dt.getMonth() + 1)}/${dt.getFullYear()}`;
 }
 
+/** PDF-safe currency (Helvetica does not render the rupee glyph). */
 export function fmtMoney(n?: number | null): string {
   if (n == null) return "—";
-  return `₹${n.toLocaleString("en-IN")}`;
+  return `Rs. ${n.toLocaleString("en-IN")}`;
 }
 
 function ordinal(n: number): string {
@@ -158,7 +159,7 @@ export function authorityRows(
     .map((h) => ({
       authority: CERT_AUTHORITY_LABELS[h.roleCode] ?? h.roleCode,
       date: fmtCertDate(h.createdAt),
-      remarks: h.remarks?.trim() ?? "",
+      remarks: "",
     }));
 }
 
@@ -174,10 +175,11 @@ export function buildSummaryNarrative(data: CertificatePdfData): string {
   if (period) opening += ` from ${period}`;
   opening += ".";
 
+  const needSource = data.needForProposal?.trim() || data.briefNote?.trim() || "";
   const needText =
-    data.needForProposal?.trim() ||
-    data.briefNote?.trim() ||
-    "A proposal was submitted for approval and clearance.";
+    needSource && needSource.toLowerCase() !== activity.toLowerCase()
+      ? needSource
+      : "A proposal was submitted for approval and clearance.";
   const need = needText.endsWith(".") ? ` ${needText}` : ` ${needText}.`;
 
   let budget = "";
@@ -199,25 +201,37 @@ export function buildSummaryNarrative(data: CertificatePdfData): string {
     }
   }
 
-  const ofcApproval = data.approvalHistory.find(
-    (h) => h.roleCode === "OFC" && h.action === "APPROVE"
-  );
-
-  let closing = "After approvals from the concerned authorities, the proposal was verified.";
-  if (ofcApproval) {
-    const date = new Date(ofcApproval.createdAt).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-    const remark = ofcApproval.remarks?.trim();
-    if (remark) {
-      closing = `After approvals from the concerned authorities, ${remark.replace(/\.$/, "")} on ${date}.`;
+  let closing: string;
+  if (data.status === "COMPLETED") {
+    const ofcApproval = data.approvalHistory.find(
+      (h) => h.roleCode === "OFC" && h.action === "APPROVE"
+    );
+    if (ofcApproval) {
+      const date = new Date(ofcApproval.createdAt).toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      closing = `After approvals from the concerned authorities, the proposal was verified on ${date}.`;
     } else {
-      closing = `After approvals from the concerned authorities, the Chancellor approved the proposal on ${date}.`;
+      closing = "After approvals from the concerned authorities, the proposal was verified.";
     }
+  } else if (data.status === "RESEND") {
+    closing = "The proposal was sent back for corrections and is awaiting resubmission by the faculty.";
+  } else if (data.status === "REJECTED") {
+    closing = "The proposal was not approved.";
+  } else {
+    closing = "The proposal is under review by the concerned authorities.";
   }
 
-  const status = data.status === "COMPLETED" ? "Approved" : data.status;
-  return `${opening}${need}${budget} ${closing} The proposal status is ${status}.`;
+  const statusLabel =
+    data.status === "COMPLETED"
+      ? "Approved"
+      : data.status === "RESEND"
+        ? "Sent back for recheck"
+        : data.status === "REJECTED"
+          ? "Rejected"
+          : data.status.charAt(0) + data.status.slice(1).toLowerCase().replace(/_/g, " ");
+
+  return `${opening}${need}${budget} ${closing} The proposal status is ${statusLabel}.`;
 }
