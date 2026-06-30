@@ -8,6 +8,7 @@ import {
   fmtCertHeaderDate,
 } from "@/lib/pdf/pdf-certificate-shared";
 import { drawCertificateHeader } from "@/lib/pdf/pdf-header";
+import { formatFacultyNameWithId } from "@/lib/pdf/pdf-faculty-block";
 import {
   drawMainCertificateRow,
   drawMainCertificateRowWithNested,
@@ -59,8 +60,8 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       y,
       colWidths,
       "1",
-      "Faculty Member",
-      data.raisedByName
+      "Faculty Name",
+      formatFacultyNameWithId(data.raisedByName, data.raisedByEmployeeId)
     );
 
     y = drawMainCertificateRow(
@@ -69,6 +70,16 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       y,
       colWidths,
       "2",
+      "Department",
+      data.departmentName
+    );
+
+    y = drawMainCertificateRow(
+      doc,
+      margin,
+      y,
+      colWidths,
+      "3",
       "Date and Brief Note",
       buildBriefNoteDetails(data)
     );
@@ -78,7 +89,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       margin,
       y,
       colWidths,
-      "3",
+      "4",
       "Need / feasibility",
       data.needForProposal?.trim() || "—"
     );
@@ -96,7 +107,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       margin,
       y,
       colWidths,
-      "4",
+      "5",
       "Details of proposed budget",
       budgetNestedHeight,
       (nestedX, nestedY, nestedWidth) =>
@@ -115,7 +126,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       margin,
       y,
       colWidths,
-      "5",
+      "6",
       "NAAC Criterion",
       data.naacCategory?.trim() || "—"
     );
@@ -125,7 +136,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       margin,
       y,
       colWidths,
-      "6",
+      "7",
       "Metrics",
       data.metricsCategory?.trim() || "—"
     );
@@ -135,7 +146,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       margin,
       y,
       colWidths,
-      "7",
+      "8",
       "Metric Description",
       data.financialDescription?.trim() || data.title || "—"
     );
@@ -157,7 +168,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       margin,
       y,
       colWidths,
-      "8",
+      "9",
       "Approval tracking",
       authorityNestedHeight,
       (nestedX, nestedY, nestedWidth) =>

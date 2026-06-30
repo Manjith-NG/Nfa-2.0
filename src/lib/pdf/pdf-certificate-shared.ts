@@ -26,6 +26,7 @@ export interface CertificatePdfData {
   status: string;
   departmentName: string;
   raisedByName: string;
+  raisedByEmployeeId?: string | null;
   briefNote?: string | null;
   needForProposal?: string | null;
   proposalDate?: Date | null;

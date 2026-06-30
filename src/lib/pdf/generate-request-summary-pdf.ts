@@ -6,6 +6,9 @@ import {
   fmtCertHeaderDate,
 } from "@/lib/pdf/pdf-certificate-shared";
 import { drawCertificateHeader } from "@/lib/pdf/pdf-header";
+import {
+  drawLabeledDetailRows,
+} from "@/lib/pdf/pdf-faculty-block";
 
 export type RequestSummaryPdfInput = CertificatePdfData & {
   completedAt?: Date | null;
@@ -34,11 +37,17 @@ export function generateRequestSummaryPdf(
       headerDate: data.completedAt ?? data.proposalDate ?? new Date(),
     });
 
+    const reportY = drawLabeledDetailRows(doc, margin, pageWidth, bodyY, [
+      { label: "Faculty Name", value: data.raisedByName },
+      { label: "Faculty ID", value: data.raisedByEmployeeId?.trim() || "—" },
+      { label: "Department", value: data.departmentName },
+    ]);
+
     doc
       .font("Helvetica-Bold")
       .fontSize(10)
       .fillColor("#000000")
-      .text("Report", margin, bodyY);
+      .text("Report", margin, reportY);
 
     doc.moveDown(0.4);
     const narrative = buildSummaryNarrative(data);

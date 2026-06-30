@@ -33,7 +33,9 @@ export async function getRequestForPdf(id: string) {
     where: { id },
     include: {
       department: true,
-      raisedBy: { select: { id: true, firstName: true, lastName: true, email: true } },
+      raisedBy: {
+        select: { id: true, firstName: true, lastName: true, email: true, employeeId: true },
+      },
       approvalHistory: {
         orderBy: { createdAt: "asc" },
         include: { actor: { select: { firstName: true, lastName: true } } },

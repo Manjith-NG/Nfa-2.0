@@ -126,6 +126,8 @@ export async function GET(
 
     raisedByName,
 
+    raisedByEmployeeId: request.raisedBy.employeeId,
+
     briefNote: request.briefNote,
 
     needForProposal: request.needForProposal,
