@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Plus, RotateCcw } from "lucide-react";
 
 export interface BudgetLine {
@@ -10,10 +11,14 @@ export interface BudgetLine {
   remarks: string;
 }
 
-function lineTotal(line: BudgetLine): number {
+export function lineTotal(line: BudgetLine): number {
   const a = parseFloat(line.amount) || 0;
   const q = parseFloat(line.quantity) || 0;
   return a * q;
+}
+
+export function sumBudgetLines(lines: BudgetLine[]): number {
+  return lines.reduce((sum, line) => sum + lineTotal(line), 0);
 }
 
 function newLine(): BudgetLine {
@@ -24,6 +29,103 @@ function newLine(): BudgetLine {
     quantity: "1",
     remarks: "",
   };
+}
+
+function AmountInput({
+  value,
+  onChange,
+  className,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
+}) {
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
+      className={className}
+      value={value}
+      onChange={(e) => {
+        const next = e.target.value;
+        if (next === "" || /^[0-9]*\.?[0-9]*$/.test(next)) {
+          onChange(next);
+        }
+      }}
+      placeholder="0"
+    />
+  );
+}
+
+function BudgetLineFields({
+  line,
+  totalLabel,
+  remarksRequired,
+  onUpdate,
+}: {
+  line: BudgetLine;
+  totalLabel: string;
+  remarksRequired: boolean;
+  onUpdate: (patch: Partial<BudgetLine>) => void;
+}) {
+  const remarksNeeded =
+    remarksRequired &&
+    Boolean(
+      line.particulars.trim() ||
+        (parseFloat(line.amount) || 0) > 0 ||
+        (parseFloat(line.quantity) || 0) > 0
+    );
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="nfa-label">Particulars</label>
+        <input
+          className="nfa-input py-2"
+          value={line.particulars}
+          onChange={(e) => onUpdate({ particulars: e.target.value })}
+          placeholder="Item description"
+        />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="nfa-label">Amount</label>
+          <AmountInput
+            className="nfa-input py-2"
+            value={line.amount}
+            onChange={(value) => onUpdate({ amount: value })}
+          />
+        </div>
+        <div>
+          <label className="nfa-label">Qty</label>
+          <AmountInput
+            className="nfa-input py-2"
+            value={line.quantity}
+            onChange={(value) => onUpdate({ quantity: value })}
+          />
+        </div>
+      </div>
+      <div className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm">
+        <span className="text-slate-500">{totalLabel}</span>
+        <span className="font-semibold text-slate-800">
+          Rs. {lineTotal(line).toLocaleString("en-IN")}
+        </span>
+      </div>
+      <div>
+        <label className="nfa-label">
+          Remarks{remarksRequired && <span className="text-red-500"> *</span>}
+        </label>
+        <input
+          className="nfa-input py-2"
+          value={line.remarks}
+          onChange={(e) => onUpdate({ remarks: e.target.value })}
+          placeholder={remarksRequired ? "Required when line has data" : undefined}
+          required={remarksNeeded}
+        />
+      </div>
+    </div>
+  );
 }
 
 export function BudgetLineTable({
@@ -43,10 +145,17 @@ export function BudgetLineTable({
   onGrandTotalChange: (v: string) => void;
   remarksRequired?: boolean;
 }) {
-  const computedTotal = lines.reduce((sum, l) => sum + lineTotal(l), 0);
+  const computedTotal = sumBudgetLines(lines);
+  const [grandTotalManual, setGrandTotalManual] = useState(Boolean(grandTotal));
+
+  useEffect(() => {
+    if (!grandTotalManual) {
+      onGrandTotalChange(computedTotal > 0 ? String(computedTotal) : "");
+    }
+  }, [computedTotal, grandTotalManual, onGrandTotalChange]);
 
   function updateLine(id: string, patch: Partial<BudgetLine>) {
-    onChange(lines.map((l) => (l.id === id ? { ...l, ...patch } : l)));
+    onChange(lines.map((line) => (line.id === id ? { ...line, ...patch } : line)));
   }
 
   function addRow() {
@@ -55,11 +164,12 @@ export function BudgetLineTable({
 
   function reset() {
     onChange([newLine()]);
+    setGrandTotalManual(false);
     onGrandTotalChange("");
   }
 
   return (
-    <section className="rounded-xl border border-nfa-border bg-white overflow-hidden">
+    <section className="overflow-hidden rounded-xl border border-nfa-border bg-white">
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-nfa-border bg-slate-50 px-4 py-3">
         <h3 className="font-semibold text-slate-900">{title}</h3>
         <div className="flex gap-2">
@@ -74,14 +184,30 @@ export function BudgetLineTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="space-y-4 p-4 md:hidden">
+        {lines.map((line, index) => (
+          <div key={line.id} className="rounded-lg border border-nfa-border bg-slate-50/40 p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Line {index + 1}
+            </p>
+            <BudgetLineFields
+              line={line}
+              totalLabel={totalLabel}
+              remarksRequired={remarksRequired}
+              onUpdate={(patch) => updateLine(line.id, patch)}
+            />
+          </div>
+        ))}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="w-full min-w-[640px] text-sm">
           <thead className="bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
               <th className="px-3 py-2 text-left">Particulars</th>
-              <th className="px-3 py-2 text-left w-28">Amount</th>
-              <th className="px-3 py-2 text-left w-24">Qty</th>
-              <th className="px-3 py-2 text-left w-32">{totalLabel}</th>
+              <th className="w-28 px-3 py-2 text-left">Amount</th>
+              <th className="w-24 px-3 py-2 text-left">Qty</th>
+              <th className="w-32 px-3 py-2 text-left">{totalLabel}</th>
               <th className="px-3 py-2 text-left">
                 Remarks{remarksRequired && <span className="text-red-500"> *</span>}
               </th>
@@ -99,26 +225,21 @@ export function BudgetLineTable({
                   />
                 </td>
                 <td className="px-2 py-2">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
+                  <AmountInput
                     className="nfa-input py-1.5"
                     value={line.amount}
-                    onChange={(e) => updateLine(line.id, { amount: e.target.value })}
+                    onChange={(value) => updateLine(line.id, { amount: value })}
                   />
                 </td>
                 <td className="px-2 py-2">
-                  <input
-                    type="number"
-                    min="0"
+                  <AmountInput
                     className="nfa-input py-1.5"
                     value={line.quantity}
-                    onChange={(e) => updateLine(line.id, { quantity: e.target.value })}
+                    onChange={(value) => updateLine(line.id, { quantity: value })}
                   />
                 </td>
-                <td className="px-2 py-2 text-slate-600 font-medium">
-                  ₹{lineTotal(line).toLocaleString("en-IN")}
+                <td className="px-2 py-2 font-medium text-slate-600">
+                  Rs. {lineTotal(line).toLocaleString("en-IN")}
                 </td>
                 <td className="px-2 py-2">
                   <input
@@ -142,18 +263,19 @@ export function BudgetLineTable({
         </table>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 border-t border-nfa-border px-4 py-3 bg-slate-50/50">
+      <div className="flex flex-col gap-3 border-t border-nfa-border bg-slate-50/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-slate-500">
-          Computed total: ₹{computedTotal.toLocaleString("en-IN")}
+          Computed total: Rs. {computedTotal.toLocaleString("en-IN")}
         </p>
-        <div className="flex items-center gap-3">
-          <label className="text-sm font-medium text-slate-700">Grand Total</label>
-          <input
-            type="number"
-            className="nfa-input w-40 py-1.5"
-            value={grandTotal || (computedTotal ? String(computedTotal) : "")}
-            onChange={(e) => onGrandTotalChange(e.target.value)}
-            placeholder="0"
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          <label className="shrink-0 text-sm font-medium text-slate-700">Grand Total</label>
+          <AmountInput
+            className="nfa-input w-full py-1.5 sm:w-40"
+            value={grandTotal}
+            onChange={(value) => {
+              setGrandTotalManual(true);
+              onGrandTotalChange(value);
+            }}
           />
         </div>
       </div>

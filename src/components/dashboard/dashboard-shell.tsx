@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { Plus } from "lucide-react";
+import { KpiCard } from "@/components/ui/kpi-card";
 import type { SessionUser } from "@/types";
 
 export function DashboardWelcome({
@@ -67,29 +68,21 @@ export function DashboardKpiGrid({
     value: number;
     icon: LucideIcon;
     variant?: "default" | "pending" | "approved" | "rejected" | "resend";
+    href?: string;
   }[];
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-      {items.map((item) => {
-        const Icon = item.icon;
-        return (
-          <div
-            key={item.title}
-            className="nfa-card flex items-center justify-between gap-3 py-4"
-          >
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-slate-500">{item.title}</p>
-              <p className="mt-1 text-3xl font-semibold tabular-nums text-slate-900">
-                {item.value}
-              </p>
-            </div>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-nfa-primary/10 text-nfa-primary">
-              <Icon className="h-5 w-5" />
-            </div>
-          </div>
-        );
-      })}
+    <div className="grid gap-4 grid-cols-2 xl:grid-cols-5">
+      {items.map((item) => (
+        <KpiCard
+          key={item.title}
+          title={item.title}
+          value={item.value}
+          icon={item.icon}
+          variant={item.variant}
+          href={item.href}
+        />
+      ))}
     </div>
   );
 }

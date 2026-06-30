@@ -17,14 +17,17 @@ function statsFromStatusCounts(
   >;
   const total = counts.reduce((sum, c) => sum + c.count, 0);
 
+  const completed = byStatus.COMPLETED ?? 0;
+
   return {
     total,
     pending: PENDING_STATUSES.reduce((sum, status) => sum + (byStatus[status] ?? 0), 0),
-    approved: byStatus.APPROVED ?? 0,
+    // Workflow ends in COMPLETED ("Verified"); APPROVED is kept for legacy rows.
+    approved: completed + (byStatus.APPROVED ?? 0),
     rejected: byStatus.REJECTED ?? 0,
     resend: byStatus.RESEND ?? 0,
     underReview: byStatus.UNDER_REVIEW ?? 0,
-    completed: byStatus.COMPLETED ?? 0,
+    completed,
   };
 }
 

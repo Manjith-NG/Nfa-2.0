@@ -11,7 +11,7 @@ import { TableSkeleton } from "@/components/ui/page-skeleton";
 import { ROLE_LABELS } from "@/lib/constants";
 import { parseStageOutcome, stageOutcomeLabel } from "@/lib/role-queue-filters";
 
-const PENDING_STATUSES: RequestStatus[] = ["PENDING", "UNDER_REVIEW", "FORWARDED", "RESEND"];
+const PENDING_STATUSES: RequestStatus[] = ["PENDING", "UNDER_REVIEW", "FORWARDED"];
 
 const FILTER_LABELS: Record<string, string> = {
   COMPLETED: "Verified requests",

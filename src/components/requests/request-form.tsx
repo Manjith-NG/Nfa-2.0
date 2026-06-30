@@ -8,6 +8,7 @@ import {
   BudgetLineTable,
   createDefaultLines,
   serializeLines,
+  sumBudgetLines,
   type BudgetLine,
 } from "@/components/requests/budget-line-table";
 import { APP_NAME } from "@/lib/constants";
@@ -227,20 +228,14 @@ export function RequestForm({
 
   const expTotal = useMemo(() => {
     const v = parseFloat(grandExp);
-    if (!Number.isNaN(v) && grandExp) return v;
-    return serializeLines(expenditures).reduce(
-      (s, l) => s + l.amount * l.quantity,
-      0
-    );
+    if (!Number.isNaN(v) && grandExp.trim() !== "") return v;
+    return sumBudgetLines(expenditures);
   }, [expenditures, grandExp]);
 
   const recTotal = useMemo(() => {
     const v = parseFloat(grandRec);
-    if (!Number.isNaN(v) && grandRec) return v;
-    return serializeLines(receivables).reduce(
-      (s, l) => s + l.amount * l.quantity,
-      0
-    );
+    if (!Number.isNaN(v) && grandRec.trim() !== "") return v;
+    return sumBudgetLines(receivables);
   }, [receivables, grandRec]);
 
   const difference = expTotal - recTotal;
@@ -485,12 +480,12 @@ export function RequestForm({
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-12">
       <div className="overflow-hidden rounded-xl border border-nfa-border bg-white shadow-card">
-        <div className="bg-gradient-to-r from-nfa-primary to-nfa-primary-light px-6 py-4">
-          <h2 className="text-2xl font-bold text-white">Raise Request</h2>
+        <div className="bg-gradient-to-r from-nfa-primary to-nfa-primary-light px-4 py-4 sm:px-6">
+          <h2 className="text-xl font-bold text-white sm:text-2xl">Raise Request</h2>
           <p className="text-sm text-white/80">{APP_NAME} — Note For Approval</p>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="space-y-6 p-4 sm:p-6">
           <div className="flex flex-wrap gap-4 border-b border-nfa-border pb-4">
             {(["ACADEMIC", "CLUB"] as const).map((type) => (
               <label
@@ -859,10 +854,15 @@ export function RequestForm({
         <div>
           <label className="nfa-label">Difference (Expenditure − Receivables)</label>
           <input
-            className="nfa-input bg-slate-50"
+            className="nfa-input bg-slate-50 text-slate-700"
             readOnly
-            value={`₹${difference.toLocaleString("en-IN")}`}
+            tabIndex={-1}
+            aria-readonly="true"
+            value={`Rs. ${difference.toLocaleString("en-IN")}`}
           />
+          <p className="mt-1 text-xs text-slate-500">
+            Calculated automatically when you enter expenditure and receivable amounts.
+          </p>
         </div>
       </div>
 

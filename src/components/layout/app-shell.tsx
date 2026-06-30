@@ -18,24 +18,46 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  function closeMobile() {
+    setMobileOpen(false);
+  }
 
   return (
     <NavigationProvider>
       <NavigationProgress />
       <div className="min-h-screen">
+        {mobileOpen && (
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-slate-900/50 md:hidden"
+            aria-label="Close menu"
+            onClick={closeMobile}
+          />
+        )}
+
         <Sidebar
           roleCode={user.roleCode}
           collapsed={collapsed}
           onToggle={() => setCollapsed(!collapsed)}
+          mobileOpen={mobileOpen}
+          onNavigate={closeMobile}
         />
+
         <div
           className={cn(
             "transition-all duration-300",
-            collapsed ? "ml-[72px]" : "ml-[var(--sidebar-width)]"
+            "ml-0 md:ml-[var(--sidebar-width)]",
+            collapsed && "md:ml-[72px]"
           )}
         >
-          <Topbar user={user} />
-          <main className="p-6">{children}</main>
+          <Topbar
+            user={user}
+            onMenuClick={() => setMobileOpen((open) => !open)}
+            menuOpen={mobileOpen}
+          />
+          <main className="p-4 sm:p-6">{children}</main>
         </div>
       </div>
     </NavigationProvider>

@@ -18,10 +18,34 @@ async function AuthorityStats({ user }: { user: SessionUser }) {
   return (
     <DashboardKpiGrid
       items={[
-        { title: "Pending Queue", value: stats.pendingForMe ?? 0, icon: Inbox, variant: "pending" },
-        { title: "Approved", value: stats.approved, icon: CheckCircle, variant: "approved" },
-        { title: "Rejected", value: stats.rejected, icon: XCircle, variant: "rejected" },
-        { title: "Resend", value: stats.resend, icon: RotateCcw, variant: "resend" },
+        {
+          title: "Pending Queue",
+          value: stats.pendingForMe ?? 0,
+          icon: Inbox,
+          variant: "pending",
+          href: "/approvals",
+        },
+        {
+          title: "Verified",
+          value: stats.completed ?? 0,
+          icon: CheckCircle,
+          variant: "approved",
+          href: `/approvals/insight?role=${user.roleCode}&stage=accepted`,
+        },
+        {
+          title: "Rejected",
+          value: stats.rejected,
+          icon: XCircle,
+          variant: "rejected",
+          href: `/approvals/insight?role=${user.roleCode}&stage=rejected`,
+        },
+        {
+          title: "Resend",
+          value: stats.resend,
+          icon: RotateCcw,
+          variant: "resend",
+          href: `/approvals/insight?role=${user.roleCode}&stage=resend`,
+        },
       ]}
     />
   );

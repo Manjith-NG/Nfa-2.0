@@ -15,8 +15,12 @@
 }
 
 @layer components {
+  .nfa-input {
+    @apply w-full rounded-lg border border-nfa-border bg-white px-3.5 py-2.5 text-base text-slate-800 placeholder:text-slate-400 focus:border-nfa-primary focus:outline-none focus:ring-2 focus:ring-nfa-primary/20 sm:text-sm;
+  }
+
   .nfa-card {
-    @apply rounded-xl border border-nfa-border bg-white p-6 shadow-card transition-shadow hover:shadow-card-hover;
+    @apply rounded-xl border border-nfa-border bg-white p-4 shadow-card transition-shadow hover:shadow-card-hover sm:p-6;
   }
 
   .nfa-btn-primary {
@@ -25,10 +29,6 @@
 
   .nfa-btn-secondary {
     @apply inline-flex items-center justify-center gap-2 rounded-lg border border-nfa-border bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200;
-  }
-
-  .nfa-input {
-    @apply w-full rounded-lg border border-nfa-border bg-white px-3.5 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-nfa-primary focus:outline-none focus:ring-2 focus:ring-nfa-primary/20;
   }
 
   .nfa-label {

@@ -50,10 +50,14 @@ export function Sidebar({
   roleCode,
   collapsed,
   onToggle,
+  mobileOpen = false,
+  onNavigate,
 }: {
   roleCode: RoleCode;
   collapsed?: boolean;
   onToggle?: () => void;
+  mobileOpen?: boolean;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const nav = [
@@ -67,8 +71,9 @@ export function Sidebar({
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-nfa-border bg-white transition-all duration-300",
-        collapsed ? "w-[72px]" : "w-[var(--sidebar-width)]"
+        "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-nfa-border bg-white transition-all duration-300",
+        collapsed ? "md:w-[72px]" : "w-[var(--sidebar-width)]",
+        mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}
     >
       <div className="flex h-16 items-center gap-3 border-b border-nfa-border px-4">
@@ -102,6 +107,7 @@ export function Sidebar({
               <NavLink
                 href={item.href}
                 active={active}
+                onClick={onNavigate}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                   active
@@ -122,7 +128,7 @@ export function Sidebar({
         <button
           type="button"
           onClick={onToggle}
-          className="m-3 flex items-center justify-center rounded-lg border border-nfa-border p-2 text-slate-500 hover:bg-slate-50"
+          className="m-3 hidden items-center justify-center rounded-lg border border-nfa-border p-2 text-slate-500 hover:bg-slate-50 md:flex"
         >
           <ChevronLeft
             className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")}

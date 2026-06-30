@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, LogOut, User, Loader2 } from "lucide-react";
+import { Bell, LogOut, User, Loader2, Menu, X } from "lucide-react";
 import Link from "next/link";
 import type { SessionUser } from "@/types";
 import { ROLE_LABELS, UNIVERSITY_NAME } from "@/lib/constants";
 import { signOutUser } from "@/lib/auth-client";
 
-export function Topbar({ user }: { user: SessionUser }) {
+export function Topbar({
+  user,
+  onMenuClick,
+  menuOpen = false,
+}: {
+  user: SessionUser;
+  onMenuClick?: () => void;
+  menuOpen?: boolean;
+}) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -34,17 +42,29 @@ export function Topbar({ user }: { user: SessionUser }) {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-nfa-border bg-white/95 px-6 backdrop-blur">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
-          {UNIVERSITY_NAME}
-        </p>
-        <h1 className="text-lg font-semibold text-slate-900">
-          {ROLE_LABELS[user.roleCode]} Portal
-        </h1>
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-nfa-border bg-white/95 px-4 backdrop-blur sm:h-16 sm:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        {onMenuClick && (
+          <button
+            type="button"
+            onClick={onMenuClick}
+            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 md:hidden"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+          >
+            {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-[10px] font-medium uppercase tracking-wider text-slate-400 sm:text-xs">
+            {UNIVERSITY_NAME}
+          </p>
+          <h1 className="truncate text-base font-semibold text-slate-900 sm:text-lg">
+            {ROLE_LABELS[user.roleCode]} Portal
+          </h1>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-4">
         <Link
           href="/notifications"
           prefetch={true}
@@ -58,11 +78,15 @@ export function Topbar({ user }: { user: SessionUser }) {
           )}
         </Link>
 
-        <div className="flex items-center gap-3 border-l border-nfa-border pl-4">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-nfa-primary/10 text-nfa-primary">
-            <User className="h-4 w-4" />
-          </div>
-          <div className="hidden text-right sm:block">
+        <div className="flex items-center gap-2 border-l border-nfa-border pl-2 sm:gap-3 sm:pl-4">
+          <Link
+            href="/settings"
+            className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 md:hidden"
+            aria-label="Account settings"
+          >
+            <User className="h-5 w-5" />
+          </Link>
+          <div className="hidden text-right md:block">
             <Link href="/settings" className="block hover:text-nfa-primary">
               <p className="text-sm font-medium text-slate-900">
                 {user.firstName} {user.lastName}

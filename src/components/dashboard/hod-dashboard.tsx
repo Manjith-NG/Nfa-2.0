@@ -22,11 +22,40 @@ async function HodStats({ user }: { user: SessionUser }) {
   return (
     <DashboardKpiGrid
       items={[
-        { title: "Department Requests", value: stats.total, icon: FileText },
-        { title: "Pending Approvals", value: stats.pendingForMe ?? 0, icon: Inbox, variant: "pending" },
-        { title: "Approved", value: stats.approved, icon: CheckCircle, variant: "approved" },
-        { title: "Rejected", value: stats.rejected, icon: XCircle, variant: "rejected" },
-        { title: "Recheck", value: stats.resend, icon: RotateCcw, variant: "resend" },
+        {
+          title: "Department Requests",
+          value: stats.total,
+          icon: FileText,
+          href: "/requests/department",
+        },
+        {
+          title: "Pending Approvals",
+          value: stats.pendingForMe ?? 0,
+          icon: Inbox,
+          variant: "pending",
+          href: "/approvals",
+        },
+        {
+          title: "Verified",
+          value: stats.completed ?? 0,
+          icon: CheckCircle,
+          variant: "approved",
+          href: "/requests?status=COMPLETED",
+        },
+        {
+          title: "Rejected",
+          value: stats.rejected,
+          icon: XCircle,
+          variant: "rejected",
+          href: "/requests?status=REJECTED",
+        },
+        {
+          title: "Recheck",
+          value: stats.resend,
+          icon: RotateCcw,
+          variant: "resend",
+          href: "/requests?status=RESEND",
+        },
       ]}
     />
   );

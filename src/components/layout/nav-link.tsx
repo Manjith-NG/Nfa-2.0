@@ -36,12 +36,14 @@ export function NavLink({
   className,
   title,
   children,
+  onClick,
 }: {
   href: string;
   active: boolean;
   className?: string;
   title?: string;
   children: ReactNode;
+  onClick?: () => void;
 }) {
   const { startNavigation } = useNavigation();
 
@@ -50,7 +52,10 @@ export function NavLink({
       href={href}
       prefetch={true}
       title={title}
-      onClick={() => startNavigation()}
+      onClick={() => {
+        startNavigation();
+        onClick?.();
+      }}
       className={className}
     >
       <NavLinkContent active={active} className="flex items-center gap-3">
