@@ -13,7 +13,6 @@ import { downloadFromApi } from "@/lib/download-client";
 import { validateApprovalRemarks } from "@/lib/request-validation";
 import { Download, Loader2, FileText, Upload, Paperclip } from "lucide-react";
 import type { RoleCode } from "@prisma/client";
-import { UserDetailDrawer } from "@/components/users/user-detail-drawer";
 
 const RequestWorkflowPanel = dynamic(
   () =>
@@ -37,7 +36,6 @@ export function RequestDetailClient({
   const router = useRouter();
   const [data, setData] = useState(initialData);
   const [remarks, setRemarks] = useState("");
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState<"summary" | "full" | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -136,18 +134,7 @@ export function RequestDetailClient({
           <p className="text-sm font-medium text-nfa-primary">{data.requestNumber}</p>
           <h2 className="text-2xl font-semibold text-slate-900">{data.title}</h2>
           <p className="mt-1 text-slate-500">
-            {data.raisedById ? (
-              <button
-                type="button"
-                className="font-medium text-nfa-primary hover:underline"
-                onClick={() => setSelectedUserId(data.raisedById!)}
-              >
-                {data.raisedByName}
-              </button>
-            ) : (
-              data.raisedByName
-            )}{" "}
-            · {data.department.name}
+            {data.raisedByName} · {data.department.name}
             {data.club && ` · ${data.club.name}`}
           </p>
         </div>
@@ -427,42 +414,13 @@ export function RequestDetailClient({
             </div>
           )}
 
-          <div className="nfa-card">
-            <h3 className="mb-4 font-semibold">Remarks History</h3>
-            <div className="space-y-3">
-              {data.remarks.length === 0 ? (
-                <p className="text-slate-500">No remarks yet</p>
-              ) : (
-                data.remarks.map((r) => (
-                  <div key={r.id} className="rounded-lg bg-slate-50 p-3">
-                    <p className="text-sm">{r.content}</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      <button
-                        type="button"
-                        className="font-medium text-nfa-primary hover:underline"
-                        onClick={() => setSelectedUserId(r.author.id)}
-                      >
-                        {r.author.firstName} {r.author.lastName}
-                      </button>
-                      <span className="text-slate-400"> · </span>
-                      <span className="font-medium text-slate-600">{r.author.roleName}</span>
-                      <span className="text-slate-400"> · </span>
-                      {formatDate(r.createdAt)}
-                    </p>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
         </div>
 
-        <div className="nfa-card">
+        <div className="nfa-card lg:sticky lg:top-20 lg:self-start">
           <h3 className="mb-6 font-semibold">Approval Tracking</h3>
           <ApprovalTimeline steps={data.timeline} requestNumber={data.requestNumber} />
         </div>
       </div>
-
-      <UserDetailDrawer userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
     </div>
   );
 }

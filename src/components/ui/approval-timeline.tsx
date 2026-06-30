@@ -85,6 +85,9 @@ export function ApprovalTimeline({
                   <p className="text-sm font-bold uppercase tracking-wide text-orange-700">
                     {roleLabel}
                   </p>
+                  {step.actorName && (
+                    <p className="text-xs font-medium text-slate-600">{step.actorName}</p>
+                  )}
                   {step.completedAt && (
                     <p className="text-xs text-slate-500">{formatTrackingDate(step.completedAt)}</p>
                   )}
