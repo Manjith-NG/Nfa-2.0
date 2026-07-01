@@ -13,7 +13,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import type { RoleCode } from "@prisma/client";
-import { DashboardKpiSection } from "@/components/dashboard/dashboard-shell";
 import { ROLE_LABELS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { ApprovalsInsightCard } from "@/lib/services/approvals-insight-service";
@@ -159,38 +158,17 @@ export function ApprovalsInsightDashboard({
     );
   }
 
-  return (
-    <div className="space-y-6 sm:space-y-8">
-      {entryCards.length > 0 && (
-        <DashboardKpiSection title="Entry points (Academic & Club)">
-          <CardGrid cards={entryCards} />
-        </DashboardKpiSection>
-      )}
-
-      {pipelineCards.length > 0 && (
-        <DashboardKpiSection title="Shared approval stages">
-          <CardGrid cards={pipelineCards} />
-        </DashboardKpiSection>
-      )}
-    </div>
-  );
+  return <CardGrid cards={allCards} />;
 }
 
 export function ApprovalsInsightSkeleton() {
   return (
-    <div className="space-y-6 sm:space-y-8" aria-hidden="true">
-      {[48, 52].map((width) => (
-        <div key={width} className="space-y-3">
-          <div className={cn("h-5 animate-pulse rounded bg-slate-200", width === 48 ? "w-48" : "w-52")} />
-          <div className={stageGridClass}>
-            {Array.from({ length: width === 48 ? 2 : 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-52 animate-pulse rounded-xl border border-nfa-border bg-slate-100"
-              />
-            ))}
-          </div>
-        </div>
+    <div className={stageGridClass} aria-hidden="true">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={i}
+          className="h-52 animate-pulse rounded-xl border border-nfa-border bg-slate-100"
+        />
       ))}
     </div>
   );
