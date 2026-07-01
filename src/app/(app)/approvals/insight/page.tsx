@@ -4,6 +4,7 @@ import {
   ApprovalsInsightDashboard,
   ApprovalsInsightSkeleton,
 } from "@/components/dashboard/approvals-insight-dashboard";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shell";
 
 export const dynamic = "force-dynamic";
 
@@ -19,13 +20,11 @@ async function ApprovalsInsightContent() {
 
 export default function ApprovalsInsightPage() {
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold text-slate-900">Role Queues</h2>
-        <p className="text-slate-500">
-          View requests at each approval stage. Manage flows and sections from Administration in the sidebar.
-        </p>
-      </div>
+    <div className="space-y-4 sm:space-y-6">
+      <DashboardPageHeader
+        title="Role Queues"
+        subtitle="Click a role total or status count to filter requests at that stage. Manage flows from Sections & Flow in Administration."
+      />
       <Suspense fallback={<ApprovalsInsightSkeleton />}>
         <ApprovalsInsightContent />
       </Suspense>
