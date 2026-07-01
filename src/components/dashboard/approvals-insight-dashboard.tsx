@@ -10,28 +10,28 @@ function InsightCard({ card }: { card: ApprovalsInsightCard }) {
   const resendLabel = card.roleCode === "HOD" || card.roleCode === "COE" ? "Resend" : "Recheck";
 
   return (
-    <article className="flex h-full flex-col rounded-xl border border-nfa-border bg-white p-4 shadow-card transition-shadow hover:shadow-card-hover">
+    <article className="flex h-full flex-col rounded-xl border border-nfa-border bg-white shadow-card transition-shadow hover:shadow-card-hover">
       <Link
         href={card.filterHref}
-        className="mb-3 flex items-start justify-between gap-3 rounded-lg transition-colors hover:bg-slate-50/80"
+        className="flex items-center justify-between gap-3 border-b border-nfa-border bg-slate-50/80 px-4 py-3 transition-colors hover:bg-slate-100/80"
       >
-        <div className="min-w-0 flex-1">
-          <h4 className="truncate text-sm font-semibold text-nfa-primary">{card.label}</h4>
+        <div className="min-w-0">
+          <h4 className="truncate text-base font-bold tracking-tight text-slate-900">{card.label}</h4>
           {card.flowSteps && card.flowSteps.length > 0 && (
             <p
-              className="mt-1 line-clamp-2 text-[11px] leading-snug text-slate-500"
+              className="mt-0.5 line-clamp-1 text-[11px] text-slate-500"
               title={card.flowSteps.join(" → ")}
             >
               {card.flowSteps.join(" → ")}
             </p>
           )}
         </div>
-        <span className="flex h-10 min-w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 px-2 text-lg font-semibold tabular-nums text-nfa-primary sm:text-xl">
+        <span className="flex h-9 min-w-9 shrink-0 items-center justify-center rounded-lg bg-nfa-primary px-2.5 text-base font-bold tabular-nums text-white sm:h-10 sm:min-w-10 sm:text-lg">
           {card.total}
         </span>
       </Link>
 
-      <div className="mt-auto grid grid-cols-2 gap-2 border-t border-nfa-border pt-3">
+      <div className="grid grid-cols-2 gap-2 p-4 pt-3">
         <StatLink href={card.hrefAccepted} value={card.accepted} label="Accepted" />
         <StatLink href={card.hrefPending} value={card.pending} label="Pending" />
         <StatLink href={card.hrefResend} value={card.resend} label={resendLabel} />
@@ -48,7 +48,7 @@ function StatLink({ href, value, label }: { href: string; value: number; label: 
       className="rounded-lg border border-nfa-border/70 bg-slate-50/50 px-2 py-1.5 transition-colors hover:border-nfa-primary/20 hover:bg-slate-50"
     >
       <p className="text-lg font-semibold tabular-nums text-slate-900 sm:text-xl">{value}</p>
-      <p className="text-xs font-medium text-slate-500">{label}</p>
+      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</p>
     </Link>
   );
 }
@@ -71,13 +71,13 @@ function PipelineFlowStrip({ pipelineCards }: { pipelineCards: ApprovalsInsightC
 
   return (
     <section className="rounded-xl border border-nfa-border bg-gradient-to-br from-nfa-primary/[0.06] via-white to-nfa-primary/[0.03] p-4 shadow-sm sm:p-5">
-      <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
+      <h3 className="mb-3 text-sm font-bold tracking-tight text-slate-900">
         University approval pipeline
-      </p>
+      </h3>
       <div className="flex flex-wrap items-center gap-2">
         {steps.map((step, index) => (
           <div key={step} className="flex items-center gap-2">
-            <span className="rounded-full border border-nfa-primary/20 bg-white px-3 py-1 text-xs font-medium text-nfa-primary shadow-sm">
+            <span className="rounded-full border border-nfa-primary/30 bg-nfa-primary px-3 py-1 text-xs font-semibold text-white shadow-sm">
               {step}
             </span>
             {index < steps.length - 1 && (

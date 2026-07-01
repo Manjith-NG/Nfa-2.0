@@ -78,7 +78,7 @@ export function DashboardKpiSection({
   return (
     <section className="space-y-3">
       {title && (
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h3>
+        <h3 className="text-sm font-bold tracking-tight text-slate-900">{title}</h3>
       )}
       {children}
     </section>
