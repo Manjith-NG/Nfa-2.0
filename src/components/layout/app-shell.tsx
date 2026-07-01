@@ -49,7 +49,7 @@ export function AppShell({
           className={cn(
             "transition-all duration-300",
             "ml-0 md:ml-[var(--sidebar-width)]",
-            collapsed && "md:ml-[72px]"
+            collapsed && "md:ml-[76px]"
           )}
         >
           <Topbar

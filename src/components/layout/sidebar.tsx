@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -73,14 +74,14 @@ export function Sidebar({
     <aside
       className={cn(
         "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-nfa-border bg-white transition-all duration-300",
-        isCollapsedView ? "md:w-[72px]" : "w-[var(--sidebar-width)]",
+        isCollapsedView ? "md:w-[76px]" : "w-[var(--sidebar-width)]",
         mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}
     >
       <div
         className={cn(
           "flex h-16 shrink-0 items-center border-b border-nfa-border",
-          isCollapsedView ? "justify-center px-2" : "gap-3 px-4"
+          isCollapsedView ? "justify-center px-0" : "gap-3 px-4"
         )}
       >
         <BrandLogo size={isCollapsedView ? 32 : 36} priority />
@@ -94,8 +95,8 @@ export function Sidebar({
 
       <nav
         className={cn(
-          "flex flex-1 flex-col overflow-y-auto",
-          isCollapsedView ? "items-center gap-1 px-2 py-3" : "gap-0.5 p-3"
+          "sidebar-nav flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden",
+          isCollapsedView ? "items-center gap-1.5 px-0 py-3" : "gap-0.5 p-3"
         )}
       >
         {nav.map((item) => {
@@ -103,16 +104,19 @@ export function Sidebar({
           const active = isNavItemActive(pathname, item.href, navHrefs);
 
           return (
-            <div key={item.href} className={cn("w-full", isCollapsedView && "flex justify-center")}>
+            <Fragment key={item.href}>
               {item.sectionLabel && (
                 <div
                   className={cn(
                     isCollapsedView
-                      ? "my-2 w-full border-t border-nfa-border pt-2"
-                      : "mb-2 mt-4 px-3"
+                      ? "my-1.5 flex w-full justify-center"
+                      : "mb-2 mt-4 w-full px-3"
                   )}
+                  aria-hidden={isCollapsedView}
                 >
-                  {!isCollapsedView && (
+                  {isCollapsedView ? (
+                    <span className="block h-px w-10 bg-nfa-border" />
+                  ) : (
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       {item.sectionLabel}
                     </p>
@@ -123,8 +127,9 @@ export function Sidebar({
                 href={item.href}
                 active={active}
                 onClick={onNavigate}
+                centered={isCollapsedView}
                 className={cn(
-                  "flex items-center rounded-lg text-sm font-medium transition-colors",
+                  "flex shrink-0 items-center rounded-lg text-sm font-medium transition-colors",
                   isCollapsedView
                     ? "h-10 w-10 justify-center p-0"
                     : "w-full gap-3 px-3 py-2.5",
@@ -137,18 +142,23 @@ export function Sidebar({
                 <Icon className="h-5 w-5 shrink-0" />
                 {!isCollapsedView && <span className="truncate">{item.label}</span>}
               </NavLink>
-            </div>
+            </Fragment>
           );
         })}
       </nav>
 
       {onToggle && (
-        <div className={cn("shrink-0 pb-3", isCollapsedView ? "flex justify-center px-2" : "px-3")}>
+        <div
+          className={cn(
+            "flex shrink-0 border-t border-nfa-border bg-white",
+            isCollapsedView ? "justify-center px-0 py-3" : "px-3 py-3"
+          )}
+        >
           <button
             type="button"
             onClick={onToggle}
             className={cn(
-              "hidden items-center justify-center rounded-lg border border-nfa-border text-slate-500 transition-colors hover:bg-slate-50 md:flex",
+              "hidden items-center justify-center rounded-lg border border-nfa-border text-slate-500 transition-colors hover:bg-slate-50 md:inline-flex",
               isCollapsedView ? "h-10 w-10" : "w-full p-2"
             )}
             aria-label={isCollapsedView ? "Expand sidebar" : "Collapse sidebar"}

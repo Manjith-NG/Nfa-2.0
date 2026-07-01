@@ -9,16 +9,19 @@ import { useNavigation } from "@/components/layout/navigation-context";
 function NavLinkContent({
   children,
   active,
+  centered,
 }: {
   children: ReactNode;
   active: boolean;
+  centered?: boolean;
 }) {
   const { pending } = useLinkStatus();
 
   return (
     <span
       className={cn(
-        "flex w-full min-w-0 items-center",
+        "flex min-w-0 items-center",
+        centered ? "justify-center" : "w-full gap-3",
         pending && "opacity-75",
         active && pending && "ring-2 ring-white/30"
       )}
@@ -35,6 +38,7 @@ export function NavLink({
   title,
   children,
   onClick,
+  centered = false,
 }: {
   href: string;
   active: boolean;
@@ -42,6 +46,7 @@ export function NavLink({
   title?: string;
   children: ReactNode;
   onClick?: () => void;
+  centered?: boolean;
 }) {
   const { startNavigation } = useNavigation();
 
@@ -56,7 +61,9 @@ export function NavLink({
       }}
       className={className}
     >
-      <NavLinkContent active={active}>{children}</NavLinkContent>
+      <NavLinkContent active={active} centered={centered}>
+        {children}
+      </NavLinkContent>
     </Link>
   );
 }
