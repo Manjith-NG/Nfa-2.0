@@ -16,7 +16,7 @@ async function AnalyticsContent() {
     getDashboardAnalytics(),
   ]);
 
-  return <RegistrarDashboard stats={stats} analytics={analytics} />;
+  return <RegistrarDashboard user={user} stats={stats} analytics={analytics} />;
 }
 
 export default function AnalyticsPage() {

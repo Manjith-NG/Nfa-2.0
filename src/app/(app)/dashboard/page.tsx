@@ -24,10 +24,11 @@ async function RegistrarDashboardLoader({ user }: { user: NonNullable<Awaited<Re
   const [stats, analytics, recentRequests] = await Promise.all([
     getDashboardStats(user),
     getDashboardAnalytics(),
-    listRequestItems(user, { limit: 10 }),
+    listRequestItems(user, { stageRole: user.roleCode, limit: 10 }),
   ]);
   return (
     <RegistrarDashboard
+      user={user}
       stats={stats}
       analytics={analytics}
       recentRequests={recentRequests}

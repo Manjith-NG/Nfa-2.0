@@ -31,6 +31,41 @@ function statsFromStatusCounts(
   };
 }
 
+async function fetchRoleStageStats(
+  user: SessionUser
+): Promise<DashboardStats & { pendingForMe: number }> {
+  const roleCode = user.roleCode;
+  const stageFilter = { stageRole: roleCode } as const;
+
+  const [pending, accepted, rejected, resend, total] = await Promise.all([
+    prisma.request.count({
+      where: buildRequestWhere(user, { ...stageFilter, stageOutcome: "pending" }),
+    }),
+    prisma.request.count({
+      where: buildRequestWhere(user, { ...stageFilter, stageOutcome: "accepted" }),
+    }),
+    prisma.request.count({
+      where: buildRequestWhere(user, { ...stageFilter, stageOutcome: "rejected" }),
+    }),
+    prisma.request.count({
+      where: buildRequestWhere(user, { ...stageFilter, stageOutcome: "resend" }),
+    }),
+    prisma.request.count({
+      where: buildRequestWhere(user, stageFilter),
+    }),
+  ]);
+
+  return {
+    total,
+    pending,
+    pendingForMe: pending,
+    approved: accepted,
+    rejected,
+    resend,
+    completed: accepted,
+  };
+}
+
 async function fetchDashboardStats(
   user: SessionUser
 ): Promise<
@@ -41,6 +76,10 @@ async function fetchDashboardStats(
     authorityCount?: number;
   }
 > {
+  if (user.roleCode === "REGISTRAR" || user.roleCode === "OFC") {
+    return fetchRoleStageStats(user);
+  }
+
   const baseWhere = buildRequestWhere(user, {});
 
   const statusPromise = prisma.request.groupBy({

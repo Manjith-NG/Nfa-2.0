@@ -1,26 +1,17 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import {
-  FileText,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Building2,
-  Users,
-  UserCog,
-  RotateCcw,
-} from "lucide-react";
+import { CheckCircle, XCircle, RotateCcw, Inbox } from "lucide-react";
 import {
   DashboardKpiGrid,
-  DashboardKpiSection,
   DashboardPageHeader,
   DashboardSection,
 } from "@/components/dashboard/dashboard-shell";
 import { RegistrarChartsSkeleton } from "@/components/dashboard/registrar-charts";
 import { RegistrarRecentRequests } from "@/components/dashboard/registrar-recent-requests";
+import { ROLE_LABELS } from "@/lib/constants";
 import type { DashboardAnalytics } from "@/lib/services/dashboard-service";
-import type { DashboardStats, RequestListItem } from "@/types";
+import type { DashboardStats, RequestListItem, SessionUser } from "@/types";
 
 const RegistrarCharts = dynamic(
   () =>
@@ -28,96 +19,67 @@ const RegistrarCharts = dynamic(
   { loading: () => <RegistrarChartsSkeleton /> }
 );
 
-type RegistrarStats = DashboardStats & {
-  departmentCount?: number;
-  clubRequests?: number;
-  authorityCount?: number;
-};
-
 export function RegistrarDashboard({
+  user,
   stats,
   analytics,
   recentRequests = [],
 }: {
-  stats: RegistrarStats;
+  user: SessionUser;
+  stats: DashboardStats & { pendingForMe?: number };
   analytics: DashboardAnalytics;
   recentRequests?: RequestListItem[];
 }) {
+  const roleCode = user.roleCode;
+  const roleLabel = ROLE_LABELS[roleCode] ?? roleCode;
+  const acceptedLabel = roleCode === "OFC" ? "Verified" : "Accepted";
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <DashboardPageHeader
-        title="Executive Dashboard"
-        subtitle="University-wide analytics and authority management"
-        actionHref="/requests"
-        actionLabel="All Requests"
+        title={`${roleLabel} Dashboard`}
+        subtitle={`Your ${roleLabel} approval queue and decision history`}
+        actionHref="/approvals"
+        actionLabel="Open Queue"
       />
 
-      <DashboardKpiSection title="Request Overview">
-        <DashboardKpiGrid
-          columns={4}
-          items={[
-            { title: "Total Requests", value: stats.total, icon: FileText, href: "/requests" },
-            {
-              title: "Pending",
-              value: stats.pending,
-              icon: Clock,
-              variant: "pending",
-              href: "/requests?pending=1",
-            },
-            {
-              title: "Verified",
-              value: stats.completed ?? 0,
-              icon: CheckCircle,
-              variant: "approved",
-              href: "/requests?status=COMPLETED",
-            },
-            {
-              title: "Rejected",
-              value: stats.rejected,
-              icon: XCircle,
-              variant: "rejected",
-              href: "/requests?status=REJECTED",
-            },
-          ]}
-        />
-      </DashboardKpiSection>
-
-      <DashboardKpiSection title="Status & Organization">
-        <DashboardKpiGrid
-          columns={4}
-          items={[
-            {
-              title: "Recheck",
-              value: stats.resend,
-              icon: RotateCcw,
-              variant: "resend",
-              href: "/requests?status=RESEND",
-            },
-            {
-              title: "Departments",
-              value: stats.departmentCount ?? 0,
-              icon: Building2,
-              href: "/authorities",
-            },
-            {
-              title: "Club Requests",
-              value: stats.clubRequests ?? 0,
-              icon: Users,
-              href: "/requests?category=CLUB",
-            },
-            {
-              title: "Authorities",
-              value: stats.authorityCount ?? 0,
-              icon: UserCog,
-              href: "/authorities",
-            },
-          ]}
-        />
-      </DashboardKpiSection>
+      <DashboardKpiGrid
+        columns={4}
+        items={[
+          {
+            title: "Pending Queue",
+            value: stats.pendingForMe ?? stats.pending,
+            icon: Inbox,
+            variant: "pending",
+            href: `/requests?role=${roleCode}&stage=pending`,
+          },
+          {
+            title: acceptedLabel,
+            value: stats.completed ?? 0,
+            icon: CheckCircle,
+            variant: "approved",
+            href: `/requests?role=${roleCode}&stage=accepted`,
+          },
+          {
+            title: "Rejected",
+            value: stats.rejected,
+            icon: XCircle,
+            variant: "rejected",
+            href: `/requests?role=${roleCode}&stage=rejected`,
+          },
+          {
+            title: "Recheck",
+            value: stats.resend,
+            icon: RotateCcw,
+            variant: "resend",
+            href: `/requests?role=${roleCode}&stage=resend`,
+          },
+        ]}
+      />
 
       <RegistrarCharts analytics={analytics} />
 
-      <DashboardSection title="Recent Requests" href="/requests" linkLabel="View all">
+      <DashboardSection title="Recent at Your Stage" href={`/requests?role=${roleCode}`} linkLabel="View all">
         <RegistrarRecentRequests items={recentRequests} />
       </DashboardSection>
     </div>
