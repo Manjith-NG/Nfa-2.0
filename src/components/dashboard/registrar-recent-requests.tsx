@@ -7,11 +7,17 @@ import { UserDetailDrawer } from "@/components/users/user-detail-drawer";
 import type { RequestListItem } from "@/types";
 import { formatDate } from "@/lib/utils";
 
-export function RegistrarRecentRequests({ items }: { items: RequestListItem[] }) {
+export function RegistrarRecentRequests({
+  items,
+  emptyMessage = "No requests yet",
+}: {
+  items: RequestListItem[];
+  emptyMessage?: string;
+}) {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   if (items.length === 0) {
-    return <p className="py-8 text-center text-slate-500">No requests yet</p>;
+    return <p className="py-8 text-center text-slate-500">{emptyMessage}</p>;
   }
 
   return (

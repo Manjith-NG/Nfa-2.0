@@ -2,6 +2,51 @@ import { prisma } from "@/lib/db";
 import { fullName } from "@/lib/utils";
 import type { SessionUser } from "@/types";
 
+export type VerifiedReportPeriod = "daily" | "weekly" | "monthly" | "all";
+
+export function verifiedReportPeriodLabel(period: VerifiedReportPeriod): string {
+  switch (period) {
+    case "daily":
+      return "Today";
+    case "weekly":
+      return "Last 7 days";
+    case "monthly":
+      return "Last 30 days";
+    case "all":
+      return "All time";
+    default: {
+      const _exhaustive: never = period;
+      return _exhaustive;
+    }
+  }
+}
+
+export function getVerifiedReportDateRange(
+  period: VerifiedReportPeriod
+): { from?: Date; to: Date } {
+  const to = new Date();
+  if (period === "all") return { to };
+
+  const from = new Date();
+  if (period === "daily") {
+    from.setHours(0, 0, 0, 0);
+    return { from, to };
+  }
+  if (period === "weekly") {
+    from.setDate(from.getDate() - 7);
+    return { from, to };
+  }
+  from.setDate(from.getDate() - 30);
+  return { from, to };
+}
+
+export function parseVerifiedReportPeriod(value: string | null): VerifiedReportPeriod {
+  if (value === "daily" || value === "weekly" || value === "monthly" || value === "all") {
+    return value;
+  }
+  return "all";
+}
+
 export function canDownloadFullCertificate(
   user: SessionUser,
   request: { status: string; raisedById: string }
@@ -44,9 +89,20 @@ export async function getRequestForPdf(id: string) {
   });
 }
 
-export async function buildVerifiedRequestsCsv(): Promise<string> {
+export async function buildVerifiedRequestsCsv(
+  period: VerifiedReportPeriod = "all"
+): Promise<string> {
+  const { from, to } = getVerifiedReportDateRange(period);
+  const completedAtFilter =
+    from != null
+      ? { gte: from, lte: to }
+      : undefined;
+
   const requests = await prisma.request.findMany({
-    where: { status: "COMPLETED" },
+    where: {
+      status: "COMPLETED",
+      ...(completedAtFilter ? { completedAt: completedAtFilter } : {}),
+    },
     orderBy: { completedAt: "desc" },
     include: {
       department: true,

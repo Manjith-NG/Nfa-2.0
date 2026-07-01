@@ -1,7 +1,7 @@
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/session";
-import { getDashboardAnalytics, getDashboardStats, listRequestItems } from "@/lib/services/dashboard-service";
+import { getDashboardStats, listRequestItems } from "@/lib/services/dashboard-service";
 import DashboardLoading from "./loading";
 
 const FacultyDashboard = dynamic(
@@ -21,17 +21,15 @@ const RegistrarDashboard = dynamic(
 );
 
 async function RegistrarDashboardLoader({ user }: { user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>> }) {
-  const [stats, analytics, recentRequests] = await Promise.all([
+  const [stats, pendingRequests] = await Promise.all([
     getDashboardStats(user),
-    getDashboardAnalytics(),
-    listRequestItems(user, { stageRole: user.roleCode, limit: 10 }),
+    listRequestItems(user, { pendingForMe: true, limit: 10 }),
   ]);
   return (
     <RegistrarDashboard
       user={user}
       stats={stats}
-      analytics={analytics}
-      recentRequests={recentRequests}
+      pendingRequests={pendingRequests}
     />
   );
 }

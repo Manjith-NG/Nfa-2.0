@@ -1,34 +1,21 @@
-"use client";
-
-import dynamic from "next/dynamic";
 import { CheckCircle, XCircle, RotateCcw, Inbox } from "lucide-react";
 import {
   DashboardKpiGrid,
   DashboardPageHeader,
   DashboardSection,
 } from "@/components/dashboard/dashboard-shell";
-import { RegistrarChartsSkeleton } from "@/components/dashboard/registrar-charts";
 import { RegistrarRecentRequests } from "@/components/dashboard/registrar-recent-requests";
 import { ROLE_LABELS } from "@/lib/constants";
-import type { DashboardAnalytics } from "@/lib/services/dashboard-service";
 import type { DashboardStats, RequestListItem, SessionUser } from "@/types";
-
-const RegistrarCharts = dynamic(
-  () =>
-    import("@/components/dashboard/registrar-charts").then((m) => m.RegistrarCharts),
-  { loading: () => <RegistrarChartsSkeleton /> }
-);
 
 export function RegistrarDashboard({
   user,
   stats,
-  analytics,
-  recentRequests = [],
+  pendingRequests = [],
 }: {
   user: SessionUser;
   stats: DashboardStats & { pendingForMe?: number };
-  analytics: DashboardAnalytics;
-  recentRequests?: RequestListItem[];
+  pendingRequests?: RequestListItem[];
 }) {
   const roleCode = user.roleCode;
   const roleLabel = ROLE_LABELS[roleCode] ?? roleCode;
@@ -77,10 +64,12 @@ export function RegistrarDashboard({
         ]}
       />
 
-      <RegistrarCharts analytics={analytics} />
-
-      <DashboardSection title="Recent at Your Stage" href={`/requests?role=${roleCode}`} linkLabel="View all">
-        <RegistrarRecentRequests items={recentRequests} />
+      <DashboardSection
+        title="Pending Requests"
+        href={`/requests?role=${roleCode}&stage=pending`}
+        linkLabel="View queue"
+      >
+        <RegistrarRecentRequests items={pendingRequests} emptyMessage="No pending requests in your queue" />
       </DashboardSection>
     </div>
   );

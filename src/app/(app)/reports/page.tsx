@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FileSpreadsheet, Download } from "lucide-react";
 import { requireRole } from "@/lib/session";
-import { DownloadCsvButton } from "@/components/reports/download-csv-button";
+import { VerifiedReportExport } from "@/components/reports/verified-report-export";
 
 export default async function ReportsPage() {
   await requireRole(["REGISTRAR", "OFC"]);
@@ -22,14 +22,14 @@ export default async function ReportsPage() {
               <FileSpreadsheet className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-semibold text-slate-900">All verified requests</h3>
+              <h3 className="font-semibold text-slate-900">Approved requests report</h3>
               <p className="mt-1 text-sm text-slate-500">
-                CSV export of every request cleared by OFC, including academic section,
-                event dates, submission/verification times, and authority remarks.
+                CSV export of verified requests with academic section, event dates,
+                submission/verification times, and authority remarks.
               </p>
             </div>
           </div>
-          <DownloadCsvButton />
+          <VerifiedReportExport />
         </div>
 
         <div className="nfa-card space-y-4">

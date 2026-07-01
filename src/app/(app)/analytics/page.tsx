@@ -1,27 +1,47 @@
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { requireRole } from "@/lib/session";
-import { getDashboardAnalytics, getDashboardStats } from "@/lib/services/dashboard-service";
-import DashboardLoading from "../dashboard/loading";
+import { getDashboardAnalytics } from "@/lib/services/dashboard-service";
+import { DashboardPageHeader } from "@/components/dashboard/dashboard-shell";
+import { RegistrarChartsSkeleton } from "@/components/dashboard/registrar-charts";
+import { Bone } from "@/components/ui/page-skeleton";
 
-const RegistrarDashboard = dynamic(
+const RegistrarCharts = dynamic(
   () =>
-    import("@/components/dashboard/registrar-dashboard").then((m) => m.RegistrarDashboard)
+    import("@/components/dashboard/registrar-charts").then((m) => m.RegistrarCharts),
+  { loading: () => <RegistrarChartsSkeleton /> }
 );
 
 async function AnalyticsContent() {
-  const user = await requireRole(["REGISTRAR", "OFC"]);
-  const [stats, analytics] = await Promise.all([
-    getDashboardStats(user),
-    getDashboardAnalytics(),
-  ]);
+  await requireRole(["REGISTRAR", "OFC"]);
+  const analytics = await getDashboardAnalytics();
 
-  return <RegistrarDashboard user={user} stats={stats} analytics={analytics} />;
+  return (
+    <div className="space-y-4 sm:space-y-6">
+      <DashboardPageHeader
+        title="Analytics"
+        subtitle="University-wide request trends, section breakdowns, and approval funnel"
+      />
+      <RegistrarCharts analytics={analytics} />
+    </div>
+  );
+}
+
+function AnalyticsLoading() {
+  return (
+    <div className="space-y-4 sm:space-y-6" aria-busy="true" aria-label="Loading analytics">
+      <div className="space-y-2">
+        <Bone className="h-8 w-40" />
+        <Bone className="h-4 w-72" />
+      </div>
+      <RegistrarChartsSkeleton />
+    </div>
+  );
 }
 
 export default function AnalyticsPage() {
   return (
-    <Suspense fallback={<DashboardLoading />}>
+    <Suspense fallback={<AnalyticsLoading />}>
       <AnalyticsContent />
     </Suspense>
   );
