@@ -74,21 +74,21 @@ export function Sidebar({
     <aside
       className={cn(
         "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-nfa-border bg-white transition-all duration-300",
-        isCollapsedView ? "md:w-[76px]" : "w-[var(--sidebar-width)]",
+        isCollapsedView ? "md:w-[68px]" : "w-[var(--sidebar-width)]",
         mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}
     >
       <div
         className={cn(
           "flex h-16 shrink-0 items-center border-b border-nfa-border",
-          isCollapsedView ? "justify-center px-0" : "gap-3 px-4"
+          isCollapsedView ? "justify-center px-0" : "gap-2 px-3"
         )}
       >
-        <BrandLogo size={isCollapsedView ? 32 : 36} priority />
+        <BrandLogo size={isCollapsedView ? 30 : 32} priority />
         {!isCollapsedView && (
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-nfa-primary">{APP_NAME}</p>
-            <p className="truncate text-[10px] leading-tight text-slate-500">{APP_FULL_NAME}</p>
+            <p className="truncate text-[13px] font-bold text-nfa-primary">{APP_NAME}</p>
+            <p className="truncate text-[9px] leading-tight text-slate-500">{APP_FULL_NAME}</p>
           </div>
         )}
       </div>
@@ -96,7 +96,7 @@ export function Sidebar({
       <nav
         className={cn(
           "sidebar-nav flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden",
-          isCollapsedView ? "items-center gap-1.5 px-0 py-3" : "gap-0.5 p-3"
+          isCollapsedView ? "items-center gap-1.5 px-0 py-3" : "gap-0.5 p-2"
         )}
       >
         {nav.map((item) => {
@@ -110,7 +110,7 @@ export function Sidebar({
                   className={cn(
                     isCollapsedView
                       ? "my-1.5 flex w-full justify-center"
-                      : "mb-2 mt-4 w-full px-3"
+                      : "mb-2 mt-3 w-full px-2"
                   )}
                   aria-hidden={isCollapsedView}
                 >
@@ -129,17 +129,17 @@ export function Sidebar({
                 onClick={onNavigate}
                 centered={isCollapsedView}
                 className={cn(
-                  "flex shrink-0 items-center rounded-lg text-sm font-medium transition-colors",
+                  "flex shrink-0 items-center rounded-lg text-[13px] font-medium transition-colors",
                   isCollapsedView
-                    ? "h-10 w-10 justify-center p-0"
-                    : "w-full gap-3 px-3 py-2.5",
+                    ? "h-9 w-9 justify-center p-0"
+                    : "w-full gap-2.5 px-2.5 py-2",
                   active
                     ? "bg-nfa-primary text-white"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 )}
                 title={isCollapsedView ? item.label : undefined}
               >
-                <Icon className="h-5 w-5 shrink-0" />
+                <Icon className="h-[18px] w-[18px] shrink-0" />
                 {!isCollapsedView && <span className="truncate">{item.label}</span>}
               </NavLink>
             </Fragment>
@@ -151,7 +151,7 @@ export function Sidebar({
         <div
           className={cn(
             "flex shrink-0 border-t border-nfa-border bg-white",
-            isCollapsedView ? "justify-center px-0 py-3" : "px-3 py-3"
+            isCollapsedView ? "justify-center px-0 py-2.5" : "px-2 py-2.5"
           )}
         >
           <button
@@ -159,7 +159,7 @@ export function Sidebar({
             onClick={onToggle}
             className={cn(
               "hidden items-center justify-center rounded-lg border border-nfa-border text-slate-500 transition-colors hover:bg-slate-50 md:inline-flex",
-              isCollapsedView ? "h-10 w-10" : "w-full p-2"
+              isCollapsedView ? "h-9 w-9" : "w-full p-2"
             )}
             aria-label={isCollapsedView ? "Expand sidebar" : "Collapse sidebar"}
           >
