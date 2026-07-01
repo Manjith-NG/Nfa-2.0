@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { SessionUser } from "@/types";
 import { ROLE_LABELS, UNIVERSITY_NAME } from "@/lib/constants";
 import { signOutUser } from "@/lib/auth-client";
+import { BackButton } from "@/components/layout/back-button";
 
 export function Topbar({
   user,
@@ -43,7 +44,7 @@ export function Topbar({
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-nfa-border bg-white/95 px-4 backdrop-blur sm:h-16 sm:px-6">
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         {onMenuClick && (
           <button
             type="button"
@@ -54,6 +55,7 @@ export function Topbar({
             {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         )}
+        <BackButton />
         <div className="min-w-0">
           <p className="truncate text-[10px] font-medium uppercase tracking-wider text-slate-400 sm:text-xs">
             {UNIVERSITY_NAME}

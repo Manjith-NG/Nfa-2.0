@@ -8,11 +8,9 @@ import { useNavigation } from "@/components/layout/navigation-context";
 
 function NavLinkContent({
   children,
-  className,
   active,
 }: {
   children: ReactNode;
-  className?: string;
   active: boolean;
 }) {
   const { pending } = useLinkStatus();
@@ -20,7 +18,7 @@ function NavLinkContent({
   return (
     <span
       className={cn(
-        className,
+        "flex w-full min-w-0 items-center",
         pending && "opacity-75",
         active && pending && "ring-2 ring-white/30"
       )}
@@ -58,9 +56,7 @@ export function NavLink({
       }}
       className={className}
     >
-      <NavLinkContent active={active} className="flex items-center gap-3">
-        {children}
-      </NavLinkContent>
+      <NavLinkContent active={active}>{children}</NavLinkContent>
     </Link>
   );
 }

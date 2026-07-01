@@ -67,37 +67,52 @@ export function Sidebar({
       : [SETTINGS_NAV_ITEM]),
   ];
   const navHrefs = nav.map((item) => item.href);
+  const isCollapsedView = Boolean(collapsed && !mobileOpen);
 
   return (
     <aside
       className={cn(
         "fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-nfa-border bg-white transition-all duration-300",
-        collapsed ? "md:w-[72px]" : "w-[var(--sidebar-width)]",
+        isCollapsedView ? "md:w-[72px]" : "w-[var(--sidebar-width)]",
         mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}
     >
-      <div className="flex h-16 items-center gap-3 border-b border-nfa-border px-4">
-        <BrandLogo size={36} priority />
-        {!collapsed && (
+      <div
+        className={cn(
+          "flex h-16 shrink-0 items-center border-b border-nfa-border",
+          isCollapsedView ? "justify-center px-2" : "gap-3 px-4"
+        )}
+      >
+        <BrandLogo size={isCollapsedView ? 32 : 36} priority />
+        {!isCollapsedView && (
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-nfa-primary">{APP_NAME}</p>
-            <p className="truncate text-[10px] text-slate-500 leading-tight">
-              {APP_FULL_NAME}
-            </p>
+            <p className="truncate text-[10px] leading-tight text-slate-500">{APP_FULL_NAME}</p>
           </div>
         )}
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+      <nav
+        className={cn(
+          "flex flex-1 flex-col overflow-y-auto",
+          isCollapsedView ? "items-center gap-1 px-2 py-3" : "gap-0.5 p-3"
+        )}
+      >
         {nav.map((item) => {
           const Icon = iconMap[item.icon] ?? LayoutDashboard;
           const active = isNavItemActive(pathname, item.href, navHrefs);
 
           return (
-            <div key={item.href}>
+            <div key={item.href} className={cn("w-full", isCollapsedView && "flex justify-center")}>
               {item.sectionLabel && (
-                <div className={cn("mb-2", collapsed ? "mt-3 border-t border-nfa-border pt-3" : "mt-4 px-3")}>
-                  {!collapsed && (
+                <div
+                  className={cn(
+                    isCollapsedView
+                      ? "my-2 w-full border-t border-nfa-border pt-2"
+                      : "mb-2 mt-4 px-3"
+                  )}
+                >
+                  {!isCollapsedView && (
                     <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       {item.sectionLabel}
                     </p>
@@ -109,15 +124,18 @@ export function Sidebar({
                 active={active}
                 onClick={onNavigate}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                  "flex items-center rounded-lg text-sm font-medium transition-colors",
+                  isCollapsedView
+                    ? "h-10 w-10 justify-center p-0"
+                    : "w-full gap-3 px-3 py-2.5",
                   active
                     ? "bg-nfa-primary text-white"
                     : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
                 )}
-                title={collapsed ? item.label : undefined}
+                title={isCollapsedView ? item.label : undefined}
               >
                 <Icon className="h-5 w-5 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
+                {!isCollapsedView && <span className="truncate">{item.label}</span>}
               </NavLink>
             </div>
           );
@@ -125,15 +143,21 @@ export function Sidebar({
       </nav>
 
       {onToggle && (
-        <button
-          type="button"
-          onClick={onToggle}
-          className="m-3 hidden items-center justify-center rounded-lg border border-nfa-border p-2 text-slate-500 hover:bg-slate-50 md:flex"
-        >
-          <ChevronLeft
-            className={cn("h-4 w-4 transition-transform", collapsed && "rotate-180")}
-          />
-        </button>
+        <div className={cn("shrink-0 pb-3", isCollapsedView ? "flex justify-center px-2" : "px-3")}>
+          <button
+            type="button"
+            onClick={onToggle}
+            className={cn(
+              "hidden items-center justify-center rounded-lg border border-nfa-border text-slate-500 transition-colors hover:bg-slate-50 md:flex",
+              isCollapsedView ? "h-10 w-10" : "w-full p-2"
+            )}
+            aria-label={isCollapsedView ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <ChevronLeft
+              className={cn("h-4 w-4 transition-transform", isCollapsedView && "rotate-180")}
+            />
+          </button>
+        </div>
       )}
     </aside>
   );
