@@ -5,10 +5,18 @@ import {
   generateBatchRequestSummaryPdf,
   type RequestSummaryPdfInput,
 } from "@/lib/pdf/generate-request-summary-pdf";
+import type { VerifiedReportPeriod } from "@/lib/reports/verified-report-options";
+import { getVerifiedReportDateRange } from "@/lib/reports/verified-report-options";
 import type { SessionUser } from "@/types";
 
-export type VerifiedReportPeriod = "daily" | "weekly" | "monthly" | "all";
-export type VerifiedReportFormat = "csv" | "summary";
+export type { VerifiedReportFormat, VerifiedReportPeriod } from "@/lib/reports/verified-report-options";
+export {
+  getVerifiedReportDateRange,
+  parseVerifiedReportFormat,
+  parseVerifiedReportPeriod,
+  verifiedReportFormatLabel,
+  verifiedReportPeriodLabel,
+} from "@/lib/reports/verified-report-options";
 
 const VERIFIED_EXPORT_INCLUDE = {
   department: true,
@@ -21,67 +29,6 @@ const VERIFIED_EXPORT_INCLUDE = {
 } as const;
 
 export const MAX_VERIFIED_SUMMARY_PDF_EXPORT = 50;
-
-export function verifiedReportFormatLabel(format: VerifiedReportFormat): string {
-  switch (format) {
-    case "csv":
-      return "CSV (detailed spreadsheet)";
-    case "summary":
-      return "Short Summary PDF";
-    default: {
-      const _exhaustive: never = format;
-      return _exhaustive;
-    }
-  }
-}
-
-export function parseVerifiedReportFormat(value: string | null): VerifiedReportFormat {
-  if (value === "csv" || value === "summary") return value;
-  return "csv";
-}
-
-export function verifiedReportPeriodLabel(period: VerifiedReportPeriod): string {
-  switch (period) {
-    case "daily":
-      return "Today";
-    case "weekly":
-      return "Last 7 days";
-    case "monthly":
-      return "Last 30 days";
-    case "all":
-      return "All time";
-    default: {
-      const _exhaustive: never = period;
-      return _exhaustive;
-    }
-  }
-}
-
-export function getVerifiedReportDateRange(
-  period: VerifiedReportPeriod
-): { from?: Date; to: Date } {
-  const to = new Date();
-  if (period === "all") return { to };
-
-  const from = new Date();
-  if (period === "daily") {
-    from.setHours(0, 0, 0, 0);
-    return { from, to };
-  }
-  if (period === "weekly") {
-    from.setDate(from.getDate() - 7);
-    return { from, to };
-  }
-  from.setDate(from.getDate() - 30);
-  return { from, to };
-}
-
-export function parseVerifiedReportPeriod(value: string | null): VerifiedReportPeriod {
-  if (value === "daily" || value === "weekly" || value === "monthly" || value === "all") {
-    return value;
-  }
-  return "all";
-}
 
 export function canDownloadFullCertificate(
   user: SessionUser,

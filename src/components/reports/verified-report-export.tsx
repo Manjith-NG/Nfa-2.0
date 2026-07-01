@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { downloadFromApi } from "@/lib/download-client";
-import type { VerifiedReportFormat, VerifiedReportPeriod } from "@/lib/services/request-export-service";
+import type { VerifiedReportFormat, VerifiedReportPeriod } from "@/lib/reports/verified-report-options";
 import {
   verifiedReportFormatLabel,
   verifiedReportPeriodLabel,
-} from "@/lib/services/request-export-service";
+} from "@/lib/reports/verified-report-options";
 
 const PERIOD_OPTIONS: VerifiedReportPeriod[] = ["daily", "weekly", "monthly", "all"];
 const FORMAT_OPTIONS: VerifiedReportFormat[] = ["csv", "summary"];
