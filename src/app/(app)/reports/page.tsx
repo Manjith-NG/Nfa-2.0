@@ -24,8 +24,8 @@ export default async function ReportsPage() {
             <div>
               <h3 className="font-semibold text-slate-900">Approved requests report</h3>
               <p className="mt-1 text-sm text-slate-500">
-                CSV export of verified requests with academic section, event dates,
-                submission/verification times, and authority remarks.
+                Export verified requests as a detailed CSV or as short summary PDFs for
+                the selected daily, weekly, or monthly period.
               </p>
             </div>
           </div>
