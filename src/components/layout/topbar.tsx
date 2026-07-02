@@ -84,7 +84,7 @@ export function Topbar({
           <Link
             href="/settings"
             className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 md:hidden"
-            aria-label="Account settings"
+            aria-label="Profile"
           >
             <User className="h-5 w-5" />
           </Link>

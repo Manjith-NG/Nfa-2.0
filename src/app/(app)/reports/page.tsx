@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { FileSpreadsheet, Download } from "lucide-react";
-import { requireRole } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 import { VerifiedReportExport } from "@/components/reports/verified-report-export";
 
 export default async function ReportsPage() {
-  await requireRole(["REGISTRAR", "OFC"]);
+  await requirePermission("reports:view");
 
   return (
     <div className="space-y-6">

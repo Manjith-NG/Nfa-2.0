@@ -1,0 +1,2 @@
+employeeId,email,firstName,lastName,phone,departmentCode,designationCode,positionCode,password
+EMP101,faculty.new@gcu.edu.in,John,Doe,9876543210,CS,FACULTY,ASST_PROFESSOR,password123

@@ -4,7 +4,7 @@ import { FacultyRoster } from "@/components/authorities/faculty-roster";
 
 export default async function DepartmentStaffPage() {
   const user = await requireUser();
-  if (user.roleCode !== "HOD" && user.roleCode !== "REGISTRAR" && user.roleCode !== "OFC") {
+  if (user.roleCode !== "HOD" && user.roleCode !== "REGISTRAR" && user.roleCode !== "OFC" && user.roleCode !== "ADMIN") {
     redirect("/dashboard");
   }
 

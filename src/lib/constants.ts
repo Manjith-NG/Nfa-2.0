@@ -4,6 +4,8 @@ export const APP_NAME = "NFA 2.0";
 export const APP_FULL_NAME = "Note For Approval System";
 export const UNIVERSITY_NAME = "Garden City University";
 
+export const DEVELOPER_DEMO_EMAIL = "developer@gcu.edu.in";
+
 export const OFC_LABEL = "OFC";
 export const OFC_FINAL_CLEARANCE_LABEL = "Awaiting Final Clearance";
 
@@ -105,7 +107,7 @@ export type NavItem = { href: string; label: string; icon: string; sectionLabel?
 
 export const SETTINGS_NAV_ITEM: NavItem = {
   href: "/settings",
-  label: "Account",
+  label: "Profile",
   icon: "Settings",
 };
 
@@ -191,7 +193,15 @@ export const NAV_BY_ROLE: Record<RoleCode, NavItem[]> = {
   ],
   ADMIN: [
     { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
-    { href: "/users", label: "User Management", icon: "Users" },
+    { href: "/requests", label: "All Requests", icon: "Files" },
+    { href: "/analytics", label: "Analytics", icon: "BarChart3" },
+    { href: "/reports", label: "Reports", icon: "FileText" },
+    { href: "/notifications", label: "Notifications", icon: "Bell" },
+    { href: "/users", label: "User Management", icon: "Users", sectionLabel: "Administration" },
+    { href: "/faculty", label: "Add Faculty", icon: "UserPlus" },
+    { href: "/flow-control", label: "Sections & Flow", icon: "GitBranch" },
+    { href: "/authorities", label: "Staff & Roles", icon: "UserCog" },
+    { href: "/clubs/authorities", label: "Club Authorities", icon: "Users" },
     { href: "/audit-logs", label: "Audit Logs", icon: "Shield" },
   ],
 };

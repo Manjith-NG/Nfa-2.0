@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { FALLBACK_LOGIN_OPTIONS } from "@/lib/demo-users";
+import { ensureDemoAccounts } from "@/lib/bootstrap/ensure-system-admin";
 import { getLoginOptions } from "@/lib/services/auth-service";
 
 const DB_SETUP_HINT =
@@ -10,6 +11,7 @@ const DB_SETUP_HINT =
 /** Public list of demo login accounts sourced from the `users` table. */
 export async function GET() {
   try {
+    await ensureDemoAccounts();
     const data = await getLoginOptions();
     if (data.length === 0) {
       return NextResponse.json({

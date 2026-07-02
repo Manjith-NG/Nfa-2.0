@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import type { SessionUser } from "@/types";
 import { redirect } from "next/navigation";
+import { hasPermission, type Permission } from "@/lib/rbac";
 
 export const getSession = cache(async () => {
   return getServerSession(authOptions);
@@ -23,6 +24,14 @@ export async function requireUser(): Promise<SessionUser> {
 export async function requireRole(allowed: string[]): Promise<SessionUser> {
   const user = await requireUser();
   if (!allowed.includes(user.roleCode)) {
+    redirect("/dashboard");
+  }
+  return user;
+}
+
+export async function requirePermission(permission: Permission): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!hasPermission(user, permission)) {
     redirect("/dashboard");
   }
   return user;

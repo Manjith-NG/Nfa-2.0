@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { RequestReviewLink } from "@/components/requests/request-review-link";
 import type { RequestListItem } from "@/types";
 import { formatDate } from "@/lib/utils";
 
@@ -19,6 +20,7 @@ export function RequestsTable({ items }: { items: RequestListItem[] }) {
           <th>Category</th>
           <th>Status</th>
           <th>Date</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -40,6 +42,9 @@ export function RequestsTable({ items }: { items: RequestListItem[] }) {
               <StatusBadge status={r.status} currentRoleCode={r.currentRoleCode} />
             </td>
             <td className="text-slate-500">{formatDate(r.createdAt)}</td>
+            <td>
+              <RequestReviewLink requestId={r.id} />
+            </td>
           </tr>
         ))}
       </tbody>
@@ -84,9 +89,7 @@ export function ApprovalsTable({ items }: { items: RequestListItem[] }) {
               <StatusBadge status={r.status} currentRoleCode={r.currentRoleCode} />
             </td>
             <td>
-              <Link href={`/requests/${r.id}`} className="nfa-btn-primary py-1.5 text-xs">
-                Review
-              </Link>
+              <RequestReviewLink requestId={r.id} />
             </td>
           </tr>
         ))}

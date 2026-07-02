@@ -54,6 +54,9 @@ run("npx", ["prisma", "db", "push", "--schema=./prisma/schema.prisma", "--accept
 console.log("\n[render-build] Seed database...");
 run("npx", ["tsx", "prisma/seed.ts"]);
 
+console.log("\n[render-build] Ensure system admin account...");
+run("npx", ["tsx", "scripts/ensure-admin.ts"]);
+
 console.log("\n[render-build] Next.js build...");
 if (process.env.DATABASE_URL?.includes(":5432") && process.env.DATABASE_URL.includes("pooler")) {
   console.warn("[render-build] DATABASE_URL still uses session pooler :5432 — normalizing to :6543");

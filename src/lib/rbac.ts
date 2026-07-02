@@ -97,6 +97,7 @@ const ROLE_PERMISSIONS: Record<RoleCode, Permission[]> = {
     "request:view_all",
     "analytics:view",
     "authorities:manage",
+    "flow:control",
     "clubs:manage",
     "audit:view",
     "users:manage",

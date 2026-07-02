@@ -8,6 +8,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { RequestReviewLink } from "@/components/requests/request-review-link";
 import {
   DashboardKpiGrid,
   DashboardSection,
@@ -81,6 +82,7 @@ async function FacultyRecentRequests({ user }: { user: SessionUser }) {
             <th className="pb-3 font-medium">Reference</th>
             <th className="pb-3 font-medium">Submitted</th>
             <th className="pb-3 font-medium">Status</th>
+            <th className="pb-3 font-medium"></th>
           </tr>
         </thead>
         <tbody>
@@ -98,6 +100,9 @@ async function FacultyRecentRequests({ user }: { user: SessionUser }) {
               <td className="py-3.5 text-sm text-slate-500">{formatDate(r.createdAt)}</td>
               <td className="py-3.5">
                 <StatusBadge status={r.status} currentRoleCode={r.currentRoleCode} />
+              </td>
+              <td className="py-3.5">
+                <RequestReviewLink requestId={r.id} />
               </td>
             </tr>
           ))}

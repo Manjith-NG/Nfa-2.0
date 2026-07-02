@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { RequestReviewLink } from "@/components/requests/request-review-link";
 import { UserDetailDrawer } from "@/components/users/user-detail-drawer";
 import type { RequestListItem } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -31,6 +32,7 @@ export function RegistrarRecentRequests({
               <th>Raised By</th>
               <th>Status</th>
               <th>Date</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -65,6 +67,9 @@ export function RegistrarRecentRequests({
                   <StatusBadge status={r.status} currentRoleCode={r.currentRoleCode} />
                 </td>
                 <td className="text-slate-500">{formatDate(r.createdAt)}</td>
+                <td>
+                  <RequestReviewLink requestId={r.id} />
+                </td>
               </tr>
             ))}
           </tbody>

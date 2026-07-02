@@ -2,6 +2,7 @@ import dynamic from "next/dynamic";
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/session";
 import { getDashboardStats, listRequestItems } from "@/lib/services/dashboard-service";
+import { getApprovalsInsight } from "@/lib/services/approvals-insight-service";
 import DashboardLoading from "./loading";
 
 const FacultyDashboard = dynamic(
@@ -20,6 +21,10 @@ const RegistrarDashboard = dynamic(
   () => import("@/components/dashboard/registrar-dashboard").then((m) => m.RegistrarDashboard)
 );
 
+const AdminDashboard = dynamic(
+  () => import("@/components/dashboard/admin-dashboard").then((m) => m.AdminDashboard)
+);
+
 async function RegistrarDashboardLoader({ user }: { user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>> }) {
   const [stats, pendingRequests] = await Promise.all([
     getDashboardStats(user),
@@ -30,6 +35,18 @@ async function RegistrarDashboardLoader({ user }: { user: NonNullable<Awaited<Re
       user={user}
       stats={stats}
       pendingRequests={pendingRequests}
+    />
+  );
+}
+
+async function AdminDashboardLoader({ user }: { user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>> }) {
+  const [stats, insight] = await Promise.all([getDashboardStats(user), getApprovalsInsight()]);
+  return (
+    <AdminDashboard
+      user={user}
+      stats={stats}
+      entryCards={insight.entryCards}
+      pipelineCards={insight.pipelineCards}
     />
   );
 }
@@ -48,6 +65,10 @@ async function DashboardContent() {
 
   if (["IQAC", "PMSEB", "HR", "COE", "CLUB_AUTHORITY"].includes(user.roleCode)) {
     return <AuthorityDashboard user={user} roleCode={user.roleCode} />;
+  }
+
+  if (user.roleCode === "ADMIN") {
+    return <AdminDashboardLoader user={user} />;
   }
 
   if (["REGISTRAR", "OFC"].includes(user.roleCode)) {

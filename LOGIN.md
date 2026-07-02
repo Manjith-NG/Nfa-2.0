@@ -26,6 +26,8 @@ Open http://localhost:3000/login
 | COE | coe@gcu.edu.in |
 | Registrar | registrar@gcu.edu.in |
 | OFC | ofc@gcu.edu.in |
+| System Admin | admin@gcu.edu.in |
+| Developer | developer@gcu.edu.in (same admin access) |
 
 Click any row on the login page to auto-fill.
 

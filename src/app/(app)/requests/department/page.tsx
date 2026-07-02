@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { RequestReviewLink } from "@/components/requests/request-review-link";
 import type { RequestListItem } from "@/types";
 
 export default function DepartmentRequestsPage() {
@@ -42,9 +43,7 @@ export default function DepartmentRequestsPage() {
                   <StatusBadge status={r.status} currentRoleCode={r.currentRoleCode} />
                 </td>
                 <td>
-                  <Link href={`/requests/${r.id}`} className="text-sm text-nfa-primary">
-                    View
-                  </Link>
+                  <RequestReviewLink requestId={r.id} />
                 </td>
               </tr>
             ))}

@@ -13,7 +13,7 @@
     "start": "node scripts/start.mjs",
     "lint": "next lint",
     "db:generate": "node scripts/prisma-generate.mjs",
-    "db:push": "prisma db push --schema=./prisma/schema.prisma",
+    "db:push": "node scripts/prisma-db-push.mjs",
     "db:init": "npm run db:push && npm run db:seed",
     "dev:clean": "powershell -ExecutionPolicy Bypass -File scripts/kill-ports.ps1",
     "dev:reset": "powershell -ExecutionPolicy Bypass -File scripts/dev-reset.ps1",

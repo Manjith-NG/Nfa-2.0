@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { APP_NAME, APP_FULL_NAME, UNIVERSITY_NAME } from "@/lib/constants";
 import { DEMO_LOGIN_PASSWORD, FALLBACK_LOGIN_OPTIONS } from "@/lib/demo-users";
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const { status } = useSession();
   const [email, setEmail] = useState("faculty.cse@gcu.edu.in");
   const [password, setPassword] = useState(DEMO_LOGIN_PASSWORD);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [demoPick, setDemoPick] = useState("");
@@ -171,16 +172,27 @@ export default function LoginPage() {
                 <label htmlFor="password" className="nfa-label">
                   Password
                 </label>
-                <input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  className="nfa-input"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={loading}
-                  required
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    className="nfa-input pr-10"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={loading}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-700"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
               {error && (
                 <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>

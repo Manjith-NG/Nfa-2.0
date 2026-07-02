@@ -69,6 +69,7 @@ async function main() {
     IQAC_OFF: await dept("IQAC_OFF"),
     REG_OFF: await dept("REG_OFF"),
     EXAM: await dept("EXAM"),
+    ADMIN: await dept("ADMIN"),
   };
 
   const desFaculty = await designation("FACULTY");
@@ -215,6 +216,22 @@ async function main() {
       firstName: "Deepa",
       lastName: "Iyer",
       role: "OFC" as RoleCode,
+    },
+    {
+      employeeId: "ADMIN001",
+      email: "admin@gcu.edu.in",
+      firstName: "System",
+      lastName: "Administrator",
+      role: "ADMIN" as RoleCode,
+      dept: "ADMIN" as const,
+    },
+    {
+      employeeId: "DEV001",
+      email: "developer@gcu.edu.in",
+      firstName: "NFA",
+      lastName: "Developer",
+      role: "ADMIN" as RoleCode,
+      dept: "ADMIN" as const,
     },
   ];
 
@@ -423,6 +440,9 @@ async function main() {
   }
 
   await syncNaacMetricsFromSeed();
+
+  const { ensureDemoAccounts } = await import("../src/lib/bootstrap/ensure-system-admin");
+  await ensureDemoAccounts();
 
   console.log("\n✅ NFA seed completed. Demo accounts (password: password123):\n");
   users.forEach((u) => console.log(`  ${u.role.padEnd(16)} ${u.email}`));

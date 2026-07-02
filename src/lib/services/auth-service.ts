@@ -45,13 +45,15 @@ export async function getLoginOptions(): Promise<LoginOption[]> {
   const options: LoginOption[] = [];
 
   for (const user of users) {
-    if (seenRoles.has(user.role.code)) continue;
-    seenRoles.add(user.role.code);
+    if (seenRoles.has(user.role.code) && user.email !== "developer@gcu.edu.in") continue;
+    if (user.email !== "developer@gcu.edu.in") {
+      seenRoles.add(user.role.code);
+    }
     options.push({
       email: user.email,
-      roleName: user.role.name,
+      roleName: user.email === "developer@gcu.edu.in" ? "Developer" : user.role.name,
       roleCode: user.role.code,
-      label: user.role.name,
+      label: user.email === "developer@gcu.edu.in" ? "Developer" : user.role.name,
     });
   }
 

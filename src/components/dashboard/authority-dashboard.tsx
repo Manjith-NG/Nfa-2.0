@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { CheckCircle, XCircle, RotateCcw, Inbox } from "lucide-react";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { RequestReviewLink } from "@/components/requests/request-review-link";
 import {
   DashboardKpiGrid,
   DashboardSection,
@@ -86,12 +87,7 @@ async function AuthorityQueue({ user }: { user: SessionUser }) {
                 <StatusBadge status={r.status} currentRoleCode={r.currentRoleCode} />
               </td>
               <td>
-                <Link
-                  href={`/requests/${r.id}`}
-                  className="text-sm font-medium text-nfa-primary hover:underline"
-                >
-                  Review
-                </Link>
+                <RequestReviewLink requestId={r.id} className="text-sm font-medium text-nfa-primary hover:underline" />
               </td>
             </tr>
           ))}

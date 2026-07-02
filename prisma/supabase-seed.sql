@@ -38,7 +38,9 @@ INSERT INTO users (id, "employeeId", email, "passwordHash", "firstName", "lastNa
 ('user_pmseb', 'PMSEB001', 'pmseb@gcu.edu.in', '$2b$10$FIByqQAyShUKdqwOtEsleuKKRnjGQbiyiJuG6.c568zfXJeDpw11q', 'Vikram', 'Singh', 'role_pmseb', NULL, true, NOW(), NOW()),
 ('user_coe', 'COE001', 'coe@gcu.edu.in', '$2b$10$FIByqQAyShUKdqwOtEsleuKKRnjGQbiyiJuG6.c568zfXJeDpw11q', 'Lakshmi', 'Nair', 'role_coe', NULL, true, NOW(), NOW()),
 ('user_registrar', 'REG001', 'registrar@gcu.edu.in', '$2b$10$FIByqQAyShUKdqwOtEsleuKKRnjGQbiyiJuG6.c568zfXJeDpw11q', 'Anil', 'Menon', 'role_registrar', NULL, true, NOW(), NOW()),
-('user_ofc', 'OFC001', 'ofc@gcu.edu.in', '$2b$10$FIByqQAyShUKdqwOtEsleuKKRnjGQbiyiJuG6.c568zfXJeDpw11q', 'Deepa', 'Iyer', 'role_ofc', NULL, true, NOW(), NOW())
+('user_ofc', 'OFC001', 'ofc@gcu.edu.in', '$2b$10$FIByqQAyShUKdqwOtEsleuKKRnjGQbiyiJuG6.c568zfXJeDpw11q', 'Deepa', 'Iyer', 'role_ofc', NULL, true, NOW(), NOW()),
+('user_admin', 'ADMIN001', 'admin@gcu.edu.in', '$2b$10$FIByqQAyShUKdqwOtEsleuKKRnjGQbiyiJuG6.c568zfXJeDpw11q', 'System', 'Administrator', 'role_admin', NULL, true, NOW(), NOW()),
+('user_developer', 'DEV001', 'developer@gcu.edu.in', '$2b$10$FIByqQAyShUKdqwOtEsleuKKRnjGQbiyiJuG6.c568zfXJeDpw11q', 'NFA', 'Developer', 'role_admin', NULL, true, NOW(), NOW())
 ON CONFLICT DO NOTHING;
 
 UPDATE departments SET "hodId" = 'user_hod' WHERE id = 'dept_cse';

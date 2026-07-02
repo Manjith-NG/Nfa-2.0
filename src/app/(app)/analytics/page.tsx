@@ -1,6 +1,6 @@
 import dynamic from "next/dynamic";
 import { Suspense } from "react";
-import { requireRole } from "@/lib/session";
+import { requirePermission } from "@/lib/session";
 import { getDashboardAnalytics } from "@/lib/services/dashboard-service";
 import { DashboardPageHeader } from "@/components/dashboard/dashboard-shell";
 import { RegistrarChartsSkeleton } from "@/components/dashboard/registrar-charts";
@@ -13,7 +13,7 @@ const RegistrarCharts = dynamic(
 );
 
 async function AnalyticsContent() {
-  await requireRole(["REGISTRAR", "OFC"]);
+  await requirePermission("analytics:view");
   const analytics = await getDashboardAnalytics();
 
   return (

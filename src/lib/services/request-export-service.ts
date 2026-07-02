@@ -36,14 +36,14 @@ export function canDownloadFullCertificate(
 ): boolean {
   if (request.status !== "COMPLETED") return false;
   if (request.raisedById === user.id) return true;
-  return ["REGISTRAR", "OFC"].includes(user.roleCode);
+  return ["REGISTRAR", "OFC", "ADMIN"].includes(user.roleCode);
 }
 
 export function canDownloadSummaryPdf(
   user: SessionUser,
   request: { status: string; raisedById: string }
 ): boolean {
-  if (["REGISTRAR", "OFC"].includes(user.roleCode)) return true;
+  if (["REGISTRAR", "OFC", "ADMIN"].includes(user.roleCode)) return true;
   if (request.raisedById === user.id && request.status !== "DRAFT") return true;
   return request.status === "COMPLETED";
 }
