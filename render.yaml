@@ -11,7 +11,7 @@ services:
     repo: https://github.com/Manjith-NG/Nfa-2.0
     buildCommand: npm install && npm run render-build
     startCommand: npm start
-    healthCheckPath: /api/health/db
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_VERSION
         value: "20.11.1"
