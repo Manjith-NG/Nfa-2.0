@@ -50,8 +50,9 @@ export function UserEditDrawer({
     positionId: "",
   });
   const [roleCode, setRoleCode] = useState<RoleCode>("FACULTY");
-  const [loginPassword, setLoginPassword] = useState(DEMO_LOGIN_PASSWORD);
+  const [loginPassword, setLoginPassword] = useState<string | null>(DEMO_LOGIN_PASSWORD);
   const [passwordIsEstimated, setPasswordIsEstimated] = useState(false);
+  const [passwordUnknown, setPasswordUnknown] = useState(false);
   const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
@@ -79,12 +80,14 @@ export function UserEditDrawer({
         }
 
         const user = userRes.data as EditableUser & {
-          loginPassword?: string;
+          loginPassword?: string | null;
           loginPasswordIsEstimated?: boolean;
+          loginPasswordKnown?: boolean;
         };
         setRoleCode(user.role.code);
-        setLoginPassword(user.loginPassword ?? DEMO_LOGIN_PASSWORD);
+        setLoginPassword(user.loginPassword ?? null);
         setPasswordIsEstimated(Boolean(user.loginPasswordIsEstimated));
+        setPasswordUnknown(user.loginPasswordKnown === false);
         setNewPassword("");
         setForm({
           employeeId: user.employeeId,
@@ -221,10 +224,23 @@ export function UserEditDrawer({
                 </div>
                 <div className="sm:col-span-2">
                   <label className="nfa-label">Login password</label>
-                  <input className="nfa-input font-mono" value={loginPassword} readOnly />
-                  {passwordIsEstimated && (
+                  {loginPassword ? (
+                    <input className="nfa-input font-mono" value={loginPassword} readOnly />
+                  ) : (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      Password was changed by the user and is not stored in plain text. Set a new
+                      password below to assign one the user can use.
+                    </p>
+                  )}
+                  {passwordIsEstimated && loginPassword && (
                     <p className="mt-1 text-xs text-amber-600">
                       Likely still the default import password. Set a new password below to confirm.
+                    </p>
+                  )}
+                  {passwordUnknown && !loginPassword && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      After you set a new password here, it will appear in this list for developer
+                      reference.
                     </p>
                   )}
                 </div>

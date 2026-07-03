@@ -82,9 +82,9 @@ export async function GET(
       success: true,
       data: {
         ...safeProfile,
-        loginPassword: loginPassword ?? DEMO_LOGIN_PASSWORD,
-        loginPasswordIsEstimated:
-          !developerProfile.passwordHint && loginPassword === DEMO_LOGIN_PASSWORD,
+        loginPassword: loginPassword,
+        loginPasswordIsEstimated: !developerProfile.passwordHint && loginPassword === DEMO_LOGIN_PASSWORD,
+        loginPasswordKnown: Boolean(loginPassword),
       },
     });
   }
@@ -187,7 +187,8 @@ export async function PATCH(
       success: true,
       data: {
         ...safeUpdated,
-        loginPassword: loginPassword ?? DEMO_LOGIN_PASSWORD,
+        loginPassword,
+        loginPasswordKnown: Boolean(loginPassword),
       },
     });
   } catch (e) {

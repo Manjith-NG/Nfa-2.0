@@ -13,7 +13,7 @@ interface UserRow {
   email: string;
   firstName: string;
   lastName: string;
-  loginPassword?: string;
+  loginPassword?: string | null;
   department?: { name: string; code: string } | null;
   designation?: { name: string; code: string } | null;
   position?: { name: string; code: string } | null;
@@ -126,9 +126,13 @@ export function FacultyRoster({
                     </td>
                     {allowEdit && (
                       <td>
-                        <code className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
-                          {u.loginPassword ?? "password123"}
-                        </code>
+                        {u.loginPassword ? (
+                          <code className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
+                            {u.loginPassword}
+                          </code>
+                        ) : (
+                          <span className="text-xs text-amber-700">Changed — open Edit</span>
+                        )}
                       </td>
                     )}
                     {showActions && (

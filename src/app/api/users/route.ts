@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
   const data = canEditUsers(user)
     ? users.map(({ passwordHint, ...row }) => ({
         ...row,
-        loginPassword: passwordHint ?? DEMO_LOGIN_PASSWORD,
+        loginPassword: passwordHint ?? null,
       }))
     : users;
 

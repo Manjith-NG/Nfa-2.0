@@ -136,7 +136,7 @@ export async function changeUserPassword(
 
   await prisma.user.update({
     where: { id: userId },
-    data: { passwordHash },
+    data: { passwordHash, passwordHint: newPassword },
   });
 
   await createAuditLog({

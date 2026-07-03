@@ -5,7 +5,10 @@ export async function resolveLoginPassword(
   passwordHash: string,
   passwordHint: string | null | undefined
 ): Promise<string | null> {
-  if (passwordHint) return passwordHint;
+  if (passwordHint) {
+    const hintMatches = await bcrypt.compare(passwordHint, passwordHash);
+    if (hintMatches) return passwordHint;
+  }
   const isDefault = await bcrypt.compare(DEMO_LOGIN_PASSWORD, passwordHash);
   return isDefault ? DEMO_LOGIN_PASSWORD : null;
 }
