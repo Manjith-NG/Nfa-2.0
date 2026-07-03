@@ -18,6 +18,8 @@ export const DEPARTMENTS_SEED = [
   { code: "PHY", name: "Physiotherapy" },
   { code: "PLAC", name: "Placements" },
   { code: "PSY", name: "Psychology" },
+  { code: "SPORTS", name: "Sports" },
+  { code: "LAW", name: "Law" },
   { code: "REG_OFF", name: "Registrar Office" },
 ] as const;
 

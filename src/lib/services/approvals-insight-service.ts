@@ -11,6 +11,7 @@ import { buildWorkflowPath } from "@/lib/workflow/resolve";
 
 const PENDING_STATUSES = ["PENDING", "UNDER_REVIEW", "FORWARDED"] as const;
 const PIPELINE_ROLES: RoleCode[] = ["IQAC", "PMSEB", "HR", "COE", "REGISTRAR", "OFC"];
+const ENTRY_ROLES: RoleCode[] = ["HOD", "CLUB_AUTHORITY"];
 
 export type ApprovalsInsightCard = {
   key: string;
@@ -105,6 +106,7 @@ function flowCardLabel(
 ): string {
   if (template.club?.name) return template.club.name;
   if (firstRole === "HOD") return "HOD";
+  if (firstRole === "HR") return ROLE_LABELS.HR;
   if (firstRole === "CLUB_AUTHORITY") return "Club Admin";
   if (sectionName) return sectionName;
   return ROLE_LABELS[firstRole] ?? template.name;
@@ -175,7 +177,7 @@ async function fetchApprovalsInsight(): Promise<{
   entryCards: ApprovalsInsightCard[];
   pipelineCards: ApprovalsInsightCard[];
 }> {
-  const [templates, requests, history] = await Promise.all([
+  const [templates, requests, history, authorityRoles] = await Promise.all([
     prisma.workflowTemplate.findMany({
       where: { isActive: true },
       include: { club: { select: { id: true, name: true } }, academicSection: { select: { id: true, name: true, code: true } } },
@@ -197,6 +199,11 @@ async function fetchApprovalsInsight(): Promise<{
     prisma.approvalHistory.findMany({
       select: { requestId: true, roleCode: true, action: true },
     }),
+    prisma.authorityMapping.findMany({
+      where: { isActive: true, departmentId: null },
+      select: { roleCode: true },
+      distinct: ["roleCode"],
+    }),
   ]);
 
   const requestTemplateMap = new Map<string, TemplateRecord>();
@@ -211,7 +218,7 @@ async function fetchApprovalsInsight(): Promise<{
   for (const template of templates) {
     const steps = templateSteps(template);
     const firstRole = steps[0];
-    if (!firstRole || PIPELINE_ROLES.includes(firstRole)) continue;
+    if (!firstRole || !ENTRY_ROLES.includes(firstRole)) continue;
 
     const key = template.clubId
       ? `club-${template.clubId}`
@@ -241,8 +248,13 @@ async function fetchApprovalsInsight(): Promise<{
     });
   }
 
-  const activePipelineRoles = PIPELINE_ROLES.filter((role) =>
-    templates.some((t) => templateSteps(t).includes(role))
+  const assignedPipelineRoles = new Set(
+    authorityRoles.map((a) => a.roleCode).filter((r) => PIPELINE_ROLES.includes(r))
+  );
+
+  const activePipelineRoles = PIPELINE_ROLES.filter(
+    (role) =>
+      templates.some((t) => templateSteps(t).includes(role)) || assignedPipelineRoles.has(role)
   );
 
   const pipelineCards: ApprovalsInsightCard[] = activePipelineRoles.map((roleCode) => {

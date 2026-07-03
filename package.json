@@ -20,6 +20,8 @@
     "postinstall": "node scripts/prisma-generate.mjs",
     "db:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
     "db:seed": "tsx prisma/seed.ts",
+    "import:faculty": "tsx scripts/import-faculty-csv.ts",
+    "import:faculty:xlsx": "python scripts/xlsx-to-faculty-csv.py && tsx scripts/import-faculty-csv.ts data/faculty-upload-batch2.csv",
     "test:db": "node scripts/test-db.mjs",
     "setup:env": "node scripts/setup-env.mjs",
     "db:studio": "prisma studio --schema=./prisma/schema.prisma"

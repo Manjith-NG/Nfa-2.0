@@ -1,4 +1,5 @@
 import { CheckCircle, XCircle, RotateCcw, Inbox } from "lucide-react";
+import { ApprovalsInsightDashboard } from "@/components/dashboard/approvals-insight-dashboard";
 import {
   DashboardKpiGrid,
   DashboardPageHeader,
@@ -6,16 +7,21 @@ import {
 } from "@/components/dashboard/dashboard-shell";
 import { RegistrarRecentRequests } from "@/components/dashboard/registrar-recent-requests";
 import { ROLE_LABELS } from "@/lib/constants";
+import type { ApprovalsInsightCard } from "@/lib/services/approvals-insight-service";
 import type { DashboardStats, RequestListItem, SessionUser } from "@/types";
 
 export function RegistrarDashboard({
   user,
   stats,
   pendingRequests = [],
+  entryCards = [],
+  pipelineCards = [],
 }: {
   user: SessionUser;
   stats: DashboardStats & { pendingForMe?: number };
   pendingRequests?: RequestListItem[];
+  entryCards?: ApprovalsInsightCard[];
+  pipelineCards?: ApprovalsInsightCard[];
 }) {
   const roleCode = user.roleCode;
   const roleLabel = ROLE_LABELS[roleCode] ?? roleCode;
@@ -71,6 +77,15 @@ export function RegistrarDashboard({
       >
         <RegistrarRecentRequests items={pendingRequests} emptyMessage="No pending requests in your queue" />
       </DashboardSection>
+
+      {(entryCards.length > 0 || pipelineCards.length > 0) && (
+        <DashboardSection title="Role Queues" href="/approvals/insight" linkLabel="Open full view">
+          <p className="mb-4 text-sm text-slate-500">
+            Approval counts by role — click a card to filter requests at that stage.
+          </p>
+          <ApprovalsInsightDashboard entryCards={entryCards} pipelineCards={pipelineCards} />
+        </DashboardSection>
+      )}
     </div>
   );
 }

@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const roleCode = searchParams.get("roleCode");
   const departmentIdParam = searchParams.get("departmentId");
+  const search = searchParams.get("search")?.trim();
 
   const departmentId =
     scope === "department" ? user.departmentId! : departmentIdParam ?? undefined;
@@ -46,8 +47,19 @@ export async function GET(req: NextRequest) {
       isActive: true,
       ...(roleCode ? { role: { code: roleCode as never } } : {}),
       ...(departmentId ? { departmentId } : {}),
+      ...(search
+        ? {
+            OR: [
+              { firstName: { contains: search, mode: "insensitive" } },
+              { lastName: { contains: search, mode: "insensitive" } },
+              { email: { contains: search, mode: "insensitive" } },
+              { employeeId: { contains: search, mode: "insensitive" } },
+            ],
+          }
+        : {}),
     },
-    orderBy: [{ department: { name: "asc" } }, { lastName: "asc" }, { firstName: "asc" }],
+    orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    take: search ? 25 : undefined,
     select: {
       id: true,
       employeeId: true,

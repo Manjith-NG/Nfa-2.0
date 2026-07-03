@@ -26,15 +26,18 @@ const AdminDashboard = dynamic(
 );
 
 async function RegistrarDashboardLoader({ user }: { user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>> }) {
-  const [stats, pendingRequests] = await Promise.all([
+  const [stats, pendingRequests, insight] = await Promise.all([
     getDashboardStats(user),
     listRequestItems(user, { pendingForMe: true, limit: 10 }),
+    getApprovalsInsight(),
   ]);
   return (
     <RegistrarDashboard
       user={user}
       stats={stats}
       pendingRequests={pendingRequests}
+      entryCards={insight.entryCards}
+      pipelineCards={insight.pipelineCards}
     />
   );
 }
