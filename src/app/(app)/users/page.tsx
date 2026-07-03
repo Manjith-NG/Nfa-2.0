@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { UserPlus, Users } from "lucide-react";
 import { requireUser } from "@/lib/session";
-import { canDeleteUsers, hasPermission } from "@/lib/rbac";
+import { canDeleteUsers, canEditUsers, hasPermission } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { FacultyRoster } from "@/components/authorities/faculty-roster";
 
@@ -18,7 +18,9 @@ export default async function UsersPage() {
           <h2 className="text-2xl font-semibold text-slate-900">User Management</h2>
           <p className="text-slate-500">
             View all active staff and faculty. Add new faculty individually or via CSV template.
-            {canDeleteUsers(user) ? " Developers can deactivate accounts from this list." : ""}
+            {canEditUsers(user) || canDeleteUsers(user)
+              ? " Developers can edit or deactivate accounts from this list."
+              : ""}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -33,7 +35,11 @@ export default async function UsersPage() {
         </div>
       </div>
 
-      <FacultyRoster viewer={user} allowDelete={canDeleteUsers(user)} />
+      <FacultyRoster
+        viewer={user}
+        allowEdit={canEditUsers(user)}
+        allowDelete={canDeleteUsers(user)}
+      />
     </div>
   );
 }

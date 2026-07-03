@@ -123,6 +123,10 @@ export function canDeleteUsers(user: SessionUser): boolean {
   return isDeveloperUser(user);
 }
 
+export function canEditUsers(user: SessionUser): boolean {
+  return isDeveloperUser(user);
+}
+
 export function isSuperAdmin(roleCode: RoleCode): boolean {
   return SUPER_ADMIN_ROLES.includes(roleCode);
 }

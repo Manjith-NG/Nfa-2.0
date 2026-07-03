@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/constants";
+import { UserEditDrawer } from "@/components/users/user-edit-drawer";
 import type { RoleCode } from "@prisma/client";
 import type { SessionUser } from "@/types";
 
@@ -12,6 +13,7 @@ interface UserRow {
   email: string;
   firstName: string;
   lastName: string;
+  loginPassword?: string;
   department?: { name: string; code: string } | null;
   designation?: { name: string; code: string } | null;
   position?: { name: string; code: string } | null;
@@ -21,13 +23,18 @@ interface UserRow {
 export function FacultyRoster({
   viewer,
   allowDelete = false,
+  allowEdit = false,
 }: {
   viewer?: SessionUser | null;
   allowDelete?: boolean;
+  allowEdit?: boolean;
 }) {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+
+  const showActions = allowDelete || allowEdit;
 
   async function loadUsers() {
     const res = await fetch("/api/users");
@@ -98,7 +105,8 @@ export function FacultyRoster({
                   <th>Designation</th>
                   <th>Position</th>
                   <th>Login role</th>
-                  {allowDelete && <th className="w-24">Actions</th>}
+                  {allowEdit && <th>Password</th>}
+                  {showActions && <th className="w-36">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -116,22 +124,44 @@ export function FacultyRoster({
                         {ROLE_LABELS[u.role.code] ?? u.role.name}
                       </span>
                     </td>
-                    {allowDelete && (
+                    {allowEdit && (
                       <td>
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
-                          onClick={() => deleteUser(u)}
-                          disabled={deletingId === u.id}
-                          title="Deactivate user"
-                        >
-                          {deletingId === u.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
+                        <code className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-700">
+                          {u.loginPassword ?? "password123"}
+                        </code>
+                      </td>
+                    )}
+                    {showActions && (
+                      <td>
+                        <div className="flex flex-wrap gap-1">
+                          {allowEdit && (
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-nfa-primary hover:bg-nfa-primary/10"
+                              onClick={() => setEditingUserId(u.id)}
+                              title="Edit user"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                              Edit
+                            </button>
                           )}
-                          Delete
-                        </button>
+                          {allowDelete && (
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                              onClick={() => deleteUser(u)}
+                              disabled={deletingId === u.id}
+                              title="Deactivate user"
+                            >
+                              {deletingId === u.id ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3.5 w-3.5" />
+                              )}
+                              Delete
+                            </button>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -141,6 +171,12 @@ export function FacultyRoster({
           </div>
         ))
       )}
+
+      <UserEditDrawer
+        userId={editingUserId}
+        onClose={() => setEditingUserId(null)}
+        onSaved={loadUsers}
+      />
     </div>
   );
 }

@@ -224,6 +224,7 @@ model User {
   employeeId     String    @unique
   email          String    @unique
   passwordHash   String
+  passwordHint   String?
   firstName      String
   lastName       String
   phone          String?

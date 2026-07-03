@@ -6,13 +6,15 @@ import { getUserClubIds } from "@/lib/club-access";
 import { readRequestUpload } from "@/lib/upload";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string; attachmentId: string }> }
 ) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id, attachmentId } = await params;
+  const disposition =
+    new URL(req.url).searchParams.get("disposition") === "inline" ? "inline" : "attachment";
   const request = await prisma.request.findUnique({ where: { id } });
   if (!request) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -33,7 +35,7 @@ export async function GET(
       status: 200,
       headers: {
         "Content-Type": attachment.mimeType || "application/octet-stream",
-        "Content-Disposition": `attachment; filename="${attachment.fileName.replace(/"/g, "")}"`,
+        "Content-Disposition": `${disposition}; filename="${attachment.fileName.replace(/"/g, "")}"`,
         "Content-Length": String(attachment.fileSize),
         "Cache-Control": "private, no-cache",
       },

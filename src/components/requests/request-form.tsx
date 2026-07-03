@@ -2,7 +2,9 @@
 
 import { useRef, useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Upload, X, FileText } from "lucide-react";
+import { Loader2, Upload, X, FileText, Eye } from "lucide-react";
+import { AttachmentActions } from "@/components/requests/attachment-actions";
+import { canPreviewAttachment } from "@/lib/download-client";
 import type { SessionUser } from "@/types";
 import {
   BudgetLineTable,
@@ -56,6 +58,14 @@ interface Department {
 interface PendingFile {
   id: string;
   file: File;
+  previewUrl?: string;
+}
+
+interface SavedAttachment {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
 }
 
 const MAX_FILE_SIZE = 2 * 1024 * 1024;
@@ -105,6 +115,7 @@ export function RequestForm({
   const [naacCriteria, setNaacCriteria] = useState<NaacCriterionOption[]>([]);
   const [metrics, setMetrics] = useState<MetricOption[]>([]);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [savedAttachments, setSavedAttachments] = useState<SavedAttachment[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowPreviewStep[]>([]);
   const [workflowAuthorities, setWorkflowAuthorities] = useState<WorkflowAuthority[]>([]);
@@ -173,6 +184,23 @@ export function RequestForm({
         .then((d) => d.success && setDepartments(d.data));
     }
   }, [needsDeptPicker]);
+
+  useEffect(() => {
+    if (!editRequestId) return;
+    fetch(`/api/requests/${editRequestId}/attachments`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.success) setSavedAttachments(d.data);
+      });
+  }, [editRequestId]);
+
+  useEffect(() => {
+    return () => {
+      pendingFiles.forEach((item) => {
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+      });
+    };
+  }, [pendingFiles]);
 
   useEffect(() => {
     const departmentId = form.departmentId || user.departmentId;
@@ -304,7 +332,13 @@ export function RequestForm({
         errors.push(`${file.name}: must be under 2 MB`);
         continue;
       }
-      accepted.push({ id: crypto.randomUUID(), file });
+      accepted.push({
+        id: crypto.randomUUID(),
+        file,
+        previewUrl: canPreviewAttachment(file.type, file.name)
+          ? URL.createObjectURL(file)
+          : undefined,
+      });
     }
 
     if (errors.length > 0) alert(errors.join("\n"));
@@ -314,7 +348,17 @@ export function RequestForm({
   }, []);
 
   function removeFile(id: string) {
-    setPendingFiles((prev) => prev.filter((f) => f.id !== id));
+    setPendingFiles((prev) => {
+      const removed = prev.find((f) => f.id === id);
+      if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+      return prev.filter((f) => f.id !== id);
+    });
+  }
+
+  function viewPendingFile(item: PendingFile) {
+    if (!item.previewUrl) return;
+    const opened = window.open(item.previewUrl, "_blank", "noopener,noreferrer");
+    if (!opened) alert("Pop-up blocked. Allow pop-ups to view the document.");
   }
 
   async function uploadAttachments(requestId: string) {
@@ -790,28 +834,62 @@ export function RequestForm({
               </p>
             </div>
 
-            {pendingFiles.length > 0 && (
+            {editRequestId && savedAttachments.length > 0 && (
               <ul className="mt-3 space-y-2">
-                {pendingFiles.map(({ id, file }) => (
+                <p className="text-xs font-medium text-slate-500">Already attached</p>
+                {savedAttachments.map((file) => (
                   <li
-                    key={id}
+                    key={file.id}
                     className="flex items-center justify-between gap-3 rounded-lg border border-nfa-border bg-white px-3 py-2"
                   >
                     <div className="flex min-w-0 items-center gap-2">
                       <FileText className="h-4 w-4 shrink-0 text-nfa-primary" />
-                      <span className="truncate text-sm font-medium text-slate-800">{file.name}</span>
+                      <span className="truncate text-sm font-medium text-slate-800">{file.fileName}</span>
                       <span className="shrink-0 text-xs text-slate-500">
-                        ({formatFileSize(file.size)})
+                        ({formatFileSize(file.fileSize)})
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
-                      onClick={() => removeFile(id)}
-                      aria-label={`Remove ${file.name}`}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                    <AttachmentActions requestId={editRequestId} file={file} compact />
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {pendingFiles.length > 0 && (
+              <ul className="mt-3 space-y-2">
+                {pendingFiles.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-center justify-between gap-3 rounded-lg border border-nfa-border bg-white px-3 py-2"
+                  >
+                    <div className="flex min-w-0 items-center gap-2">
+                      <FileText className="h-4 w-4 shrink-0 text-nfa-primary" />
+                      <span className="truncate text-sm font-medium text-slate-800">{item.file.name}</span>
+                      <span className="shrink-0 text-xs text-slate-500">
+                        ({formatFileSize(item.file.size)})
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {canPreviewAttachment(item.file.type, item.file.name) && (
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-nfa-primary hover:bg-nfa-primary/10"
+                          onClick={() => viewPendingFile(item)}
+                          title="View document"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          View
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-red-600"
+                        onClick={() => removeFile(item.id)}
+                        aria-label={`Remove ${item.file.name}`}
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

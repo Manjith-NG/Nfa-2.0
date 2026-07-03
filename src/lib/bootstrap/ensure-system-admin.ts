@@ -57,6 +57,15 @@ export async function ensureDemoAccounts(): Promise<void> {
       },
     });
   }
+
+  try {
+    await prisma.$executeRaw`
+      UPDATE users SET "passwordHint" = ${DEMO_PASSWORD}
+      WHERE "passwordHint" IS NULL
+    `;
+  } catch {
+    // Column may not exist until prisma db push runs
+  }
 }
 
 /** @deprecated Use ensureDemoAccounts */

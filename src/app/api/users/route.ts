@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
-import { hasPermission } from "@/lib/rbac";
+import { hasPermission, canEditUsers } from "@/lib/rbac";
 import { createAuditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
+import { DEMO_LOGIN_PASSWORD } from "@/lib/demo-users";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -72,10 +73,18 @@ export async function GET(req: NextRequest) {
       designation: { select: { name: true, code: true } },
       position: { select: { name: true, code: true } },
       role: { select: { code: true, name: true } },
+      ...(canEditUsers(user) ? { passwordHint: true } : {}),
     },
   });
 
-  return NextResponse.json({ success: true, data: users });
+  const data = canEditUsers(user)
+    ? users.map(({ passwordHint, ...row }) => ({
+        ...row,
+        loginPassword: passwordHint ?? DEMO_LOGIN_PASSWORD,
+      }))
+    : users;
+
+  return NextResponse.json({ success: true, data });
 }
 
 export async function POST(req: NextRequest) {
@@ -92,7 +101,8 @@ export async function POST(req: NextRequest) {
       where: { code: "FACULTY" },
     });
 
-    const passwordHash = await bcrypt.hash(data.password ?? "password123", 10);
+    const password = data.password ?? DEMO_LOGIN_PASSWORD;
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const created = await prisma.user.create({
       data: {
@@ -102,6 +112,7 @@ export async function POST(req: NextRequest) {
         lastName: data.lastName,
         phone: data.phone,
         passwordHash,
+        passwordHint: password,
         roleId: facultyRole.id,
         departmentId: data.departmentId,
         designationId: data.designationId,

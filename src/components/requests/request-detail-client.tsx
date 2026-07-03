@@ -10,6 +10,7 @@ import { Bone } from "@/components/ui/page-skeleton";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { RequestDetailData } from "@/lib/services/request-detail-service";
 import { downloadFromApi } from "@/lib/download-client";
+import { AttachmentActions } from "@/components/requests/attachment-actions";
 import { validateApprovalRemarks } from "@/lib/request-validation";
 import { Download, Loader2, FileText, Upload, Paperclip } from "lucide-react";
 import type { RoleCode } from "@prisma/client";
@@ -350,18 +351,7 @@ export function RequestDetailClient({
                         ({formatFileSize(file.fileSize)})
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      className="shrink-0 text-sm font-medium text-nfa-primary hover:underline"
-                      onClick={() =>
-                        downloadFromApi(
-                          `/api/requests/${id}/attachments/${file.id}`,
-                          file.fileName
-                        )
-                      }
-                    >
-                      Download
-                    </button>
+                    <AttachmentActions requestId={id} file={file} />
                   </li>
                 ))}
               </ul>

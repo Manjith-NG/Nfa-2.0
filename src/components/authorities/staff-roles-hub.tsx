@@ -4,6 +4,8 @@ import { useState } from "react";
 import { AuthorityManager } from "@/components/authorities/authority-manager";
 import { ClubAuthorityManager } from "@/components/authorities/club-authority-manager";
 import { FacultyRoster } from "@/components/authorities/faculty-roster";
+import { canDeleteUsers, canEditUsers } from "@/lib/rbac";
+import type { SessionUser } from "@/types";
 
 const TABS = [
   { id: "hod", label: "Department & HOD" },
@@ -14,7 +16,13 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export function StaffRolesHub({ initialTab = "hod" }: { initialTab?: TabId }) {
+export function StaffRolesHub({
+  initialTab = "hod",
+  viewer,
+}: {
+  initialTab?: TabId;
+  viewer?: SessionUser;
+}) {
   const [tab, setTab] = useState<TabId>(initialTab);
 
   return (
@@ -57,7 +65,13 @@ export function StaffRolesHub({ initialTab = "hod" }: { initialTab?: TabId }) {
 
       {tab === "clubs" && <ClubAuthorityManager />}
 
-      {tab === "roster" && <FacultyRoster />}
+      {tab === "roster" && (
+        <FacultyRoster
+          viewer={viewer}
+          allowEdit={viewer ? canEditUsers(viewer) : false}
+          allowDelete={viewer ? canDeleteUsers(viewer) : false}
+        />
+      )}
     </div>
   );
 }

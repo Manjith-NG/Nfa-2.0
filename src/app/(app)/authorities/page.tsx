@@ -27,7 +27,7 @@ export default async function AuthoritiesPage({
           and view faculty by department. Each person logs in with their email.
         </p>
       </div>
-      <StaffRolesHub initialTab={initialTab} />
+      <StaffRolesHub initialTab={initialTab} viewer={user} />
     </div>
   );
 }
