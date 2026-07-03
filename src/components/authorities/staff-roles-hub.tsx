@@ -6,6 +6,7 @@ import { ClubAuthorityManager } from "@/components/authorities/club-authority-ma
 import { FacultyRoster } from "@/components/authorities/faculty-roster";
 
 const TABS = [
+  { id: "hod", label: "Department & HOD" },
   { id: "university", label: "University Roles" },
   { id: "clubs", label: "Club Authorities" },
   { id: "roster", label: "Faculty by Department" },
@@ -13,7 +14,7 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export function StaffRolesHub({ initialTab = "university" }: { initialTab?: TabId }) {
+export function StaffRolesHub({ initialTab = "hod" }: { initialTab?: TabId }) {
   const [tab, setTab] = useState<TabId>(initialTab);
 
   return (
@@ -35,12 +36,22 @@ export function StaffRolesHub({ initialTab = "university" }: { initialTab?: TabI
         ))}
       </div>
 
+      {tab === "hod" && (
+        <div className="space-y-2">
+          <p className="text-sm text-slate-500">
+            Each department has its own HOD login. Faculty in that department raise requests; the
+            HOD approves department-section requests.
+          </p>
+          <AuthorityManager showUniversityRoles={false} />
+        </div>
+      )}
+
       {tab === "university" && (
         <div className="space-y-2">
           <p className="text-sm text-slate-500">
             Assign IQAC, PMSEB, HR, and COE — search faculty by name, email, or employee ID.
           </p>
-          <AuthorityManager />
+          <AuthorityManager universityOnly />
         </div>
       )}
 

@@ -3,9 +3,13 @@ import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { hasPermission } from "@/lib/rbac";
 import { createAuditLog } from "@/lib/audit";
+import { assignDepartmentHod } from "@/lib/services/hod-assignment-service";
 import { z } from "zod";
 
-const schema = z.object({ userId: z.string() });
+const schema = z.object({
+  userId: z.string(),
+  reason: z.string().optional(),
+});
 
 export async function PATCH(
   req: NextRequest,
@@ -20,41 +24,19 @@ export async function PATCH(
   const { id: departmentId } = await params;
 
   try {
-    const { userId } = schema.parse(await req.json());
+    const { userId, reason } = schema.parse(await req.json());
 
-    const hodUser = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { role: true },
-    });
-    if (!hodUser) throw new Error("User not found");
+    const result = await prisma.$transaction(async (tx) =>
+      assignDepartmentHod(
+        { departmentId, userId, assignedById: user.id, reason },
+        tx
+      )
+    );
 
-    const dept = await prisma.department.update({
+    const dept = await prisma.department.findUnique({
       where: { id: departmentId },
-      data: { hodId: userId },
       include: {
         hod: { select: { firstName: true, lastName: true, email: true } },
-      },
-    });
-
-    const hodRole = await prisma.role.findUniqueOrThrow({ where: { code: "HOD" } });
-    await prisma.user.update({
-      where: { id: userId },
-      data: { roleId: hodRole.id, departmentId },
-    });
-
-    await prisma.authorityMapping.updateMany({
-      where: { roleCode: "HOD", departmentId, isActive: true },
-      data: { isActive: false, endDate: new Date() },
-    });
-
-    await prisma.authorityMapping.create({
-      data: {
-        roleCode: "HOD",
-        userId,
-        departmentId,
-        assignmentType: "PERMANENT",
-        assignedById: user.id,
-        isActive: true,
       },
     });
 
@@ -63,7 +45,7 @@ export async function PATCH(
       action: "HOD_ASSIGNED",
       entityType: "Department",
       entityId: departmentId,
-      newValue: { hodUserId: userId },
+      newValue: { hodUserId: userId, previousHodId: result.previousHodId },
     });
 
     return NextResponse.json({ success: true, data: dept });

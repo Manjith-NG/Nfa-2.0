@@ -18,7 +18,7 @@ import {
   resolveWorkflowForNewRequest,
   serializeWorkflowPath,
 } from "@/lib/workflow/resolve";
-import { canViewRequest, canApproveAtStep } from "@/lib/rbac";
+import { canViewRequest, canApproveAtStep, canApproveRequests } from "@/lib/rbac";
 import { getUserClubIds } from "@/lib/club-access";
 import { createAuditLog, logWorkflowEvent } from "@/lib/audit";
 import {
@@ -567,6 +567,10 @@ export async function processApproval(
     user.roleCode === "CLUB_AUTHORITY" ? await getUserClubIds(user.id) : undefined;
 
   if (!canViewRequest(user, request, userClubIds)) throw new Error("Access denied");
+
+  if (!canApproveRequests(user)) {
+    throw new Error("You are not authorized to approve requests");
+  }
 
   if (request.status === "RESEND") {
     throw new Error(

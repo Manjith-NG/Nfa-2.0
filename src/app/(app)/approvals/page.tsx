@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/session";
+import { canApproveRequests } from "@/lib/rbac";
+import { redirect } from "next/navigation";
 import { listRequestItems } from "@/lib/services/dashboard-service";
 import { ApprovalsTable } from "@/components/requests/requests-table";
 import { TableSkeleton } from "@/components/ui/page-skeleton";
@@ -7,6 +9,9 @@ import { TableSkeleton } from "@/components/ui/page-skeleton";
 async function ApprovalsList() {
   const user = await getCurrentUser();
   if (!user) return null;
+  if (!canApproveRequests(user)) {
+    redirect("/dashboard");
+  }
 
   const items = await listRequestItems(user, { pendingForMe: true, limit: 50 });
   return <ApprovalsTable items={items} />;

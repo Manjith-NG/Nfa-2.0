@@ -1,6 +1,6 @@
 import type { RoleCode, RequestCategory, Prisma } from "@prisma/client";
 import type { SessionUser } from "@/types";
-import { SUPER_ADMIN_ROLES, APPROVAL_ROLES } from "./constants";
+import { SUPER_ADMIN_ROLES, APPROVAL_ROLES, DEVELOPER_DEMO_EMAIL } from "./constants";
 import { parseWorkflowPath } from "@/lib/workflow/resolve";
 
 export type Permission =
@@ -109,6 +109,20 @@ export function hasPermission(user: SessionUser, permission: Permission): boolea
   return ROLE_PERMISSIONS[user.roleCode]?.includes(permission) ?? false;
 }
 
+export function isDeveloperUser(user: SessionUser): boolean {
+  return user.email.toLowerCase() === DEVELOPER_DEMO_EMAIL;
+}
+
+/** System admin and developer portal accounts cannot act as workflow approvers. */
+export function canApproveRequests(user: SessionUser): boolean {
+  if (user.roleCode === "ADMIN") return false;
+  return hasPermission(user, "request:approve");
+}
+
+export function canDeleteUsers(user: SessionUser): boolean {
+  return isDeveloperUser(user);
+}
+
 export function isSuperAdmin(roleCode: RoleCode): boolean {
   return SUPER_ADMIN_ROLES.includes(roleCode);
 }
@@ -163,6 +177,7 @@ export function canApproveAtStep(
   },
   userClubIds?: string[]
 ): boolean {
+  if (!canApproveRequests(user)) return false;
   if (!request.currentRoleCode || request.currentRoleCode !== user.roleCode) {
     return false;
   }

@@ -389,6 +389,14 @@ export function RequestForm({
       return;
     }
 
+    if (submitRequest) {
+      const actionLabel = editStatus === "RESEND" ? "resubmit" : "submit";
+      const confirmed = window.confirm(
+        `Are you sure you want to ${actionLabel} this request?\n\nOnce submitted, it will enter the approval workflow. You may not be able to edit it until it is sent back for corrections.`
+      );
+      if (!confirmed) return;
+    }
+
     setLoading(true);
     try {
       if (editRequestId) {

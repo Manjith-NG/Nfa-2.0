@@ -5,6 +5,10 @@ export const APP_FULL_NAME = "Note For Approval System";
 export const UNIVERSITY_NAME = "Garden City University";
 
 export const DEVELOPER_DEMO_EMAIL = "developer@gcu.edu.in";
+export const ADMIN_DEMO_EMAIL = "admin@gcu.edu.in";
+
+/** Demo portal accounts that must not be deleted via the UI */
+export const PROTECTED_SYSTEM_EMAILS = [DEVELOPER_DEMO_EMAIL, ADMIN_DEMO_EMAIL] as const;
 
 export const OFC_LABEL = "OFC";
 export const OFC_FINAL_CLEARANCE_LABEL = "Awaiting Final Clearance";

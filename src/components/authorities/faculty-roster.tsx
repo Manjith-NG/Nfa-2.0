@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Loader2, Trash2 } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/constants";
 import type { RoleCode } from "@prisma/client";
 import type { SessionUser } from "@/types";
@@ -17,18 +18,45 @@ interface UserRow {
   role: { code: RoleCode; name: string };
 }
 
-export function FacultyRoster({ viewer }: { viewer?: SessionUser | null }) {
+export function FacultyRoster({
+  viewer,
+  allowDelete = false,
+}: {
+  viewer?: SessionUser | null;
+  allowDelete?: boolean;
+}) {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  async function loadUsers() {
+    const res = await fetch("/api/users");
+    const d = await res.json();
+    if (d.success) setUsers(d.data);
+    setLoading(false);
+  }
 
   useEffect(() => {
-    fetch("/api/users")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) setUsers(d.data);
-        setLoading(false);
-      });
+    loadUsers();
   }, []);
+
+  async function deleteUser(user: UserRow) {
+    const confirmed = window.confirm(
+      `Delete ${user.firstName} ${user.lastName} (${user.email})?\n\nThey will be deactivated and cannot log in.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(user.id);
+    const res = await fetch(`/api/users/${user.id}`, { method: "DELETE" });
+    const data = await res.json();
+    setDeletingId(null);
+
+    if (data.success) {
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+    } else {
+      alert(data.error ?? "Failed to delete user");
+    }
+  }
 
   const byDepartment = useMemo(() => {
     const map = new Map<string, UserRow[]>();
@@ -70,6 +98,7 @@ export function FacultyRoster({ viewer }: { viewer?: SessionUser | null }) {
                   <th>Designation</th>
                   <th>Position</th>
                   <th>Login role</th>
+                  {allowDelete && <th className="w-24">Actions</th>}
                 </tr>
               </thead>
               <tbody>
@@ -87,6 +116,24 @@ export function FacultyRoster({ viewer }: { viewer?: SessionUser | null }) {
                         {ROLE_LABELS[u.role.code] ?? u.role.name}
                       </span>
                     </td>
+                    {allowDelete && (
+                      <td>
+                        <button
+                          type="button"
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                          onClick={() => deleteUser(u)}
+                          disabled={deletingId === u.id}
+                          title="Deactivate user"
+                        >
+                          {deletingId === u.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
+                          Delete
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

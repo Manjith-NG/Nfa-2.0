@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
 import { hasPermission } from "@/lib/rbac";
 import { createAuditLog } from "@/lib/audit";
+import { assignDepartmentHod } from "@/lib/services/hod-assignment-service";
 import { z } from "zod";
 
 const assignSchema = z.object({
@@ -53,6 +54,48 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const data = assignSchema.parse(body);
 
+    if (data.roleCode === "HOD") {
+      if (!data.departmentId) {
+        return NextResponse.json(
+          { success: false, error: "Department is required for HOD assignment" },
+          { status: 400 }
+        );
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await assignDepartmentHod(
+          {
+            departmentId: data.departmentId!,
+            userId: data.userId,
+            assignedById: user.id,
+            reason: data.reason,
+          },
+          tx
+        );
+      });
+
+      const mapping = await prisma.authorityMapping.findFirst({
+        where: {
+          roleCode: "HOD",
+          userId: data.userId,
+          departmentId: data.departmentId,
+          isActive: true,
+        },
+        include: { user: { select: { firstName: true, lastName: true, email: true } } },
+        orderBy: { createdAt: "desc" },
+      });
+
+      await createAuditLog({
+        userId: user.id,
+        action: "AUTHORITY_ASSIGNED",
+        entityType: "AuthorityMapping",
+        entityId: mapping?.id,
+        newValue: data,
+      });
+
+      return NextResponse.json({ success: true, data: mapping }, { status: 201 });
+    }
+
     await prisma.authorityMapping.updateMany({
       where: {
         roleCode: data.roleCode,
@@ -76,25 +119,13 @@ export async function POST(req: NextRequest) {
       include: { user: { select: { firstName: true, lastName: true, email: true } } },
     });
 
-    if (data.roleCode === "HOD" && data.departmentId) {
-      await prisma.department.update({
-        where: { id: data.departmentId },
-        data: { hodId: data.userId },
-      });
-    }
-
     const assignableRole = await prisma.role.findUnique({
       where: { code: data.roleCode },
     });
     if (assignableRole) {
       await prisma.user.update({
         where: { id: data.userId },
-        data: {
-          roleId: assignableRole.id,
-          ...(data.roleCode === "HOD" && data.departmentId
-            ? { departmentId: data.departmentId }
-            : {}),
-        },
+        data: { roleId: assignableRole.id },
       });
     }
 
