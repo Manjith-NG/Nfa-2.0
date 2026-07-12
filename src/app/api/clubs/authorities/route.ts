@@ -11,29 +11,45 @@ const schema = z.object({
   expiresAt: z.string().optional(),
 });
 
+const userOptionSelect = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  department: { select: { name: true } },
+} as const;
+
 export async function GET() {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const authorities = await prisma.clubAuthority.findMany({
-    where: { isActive: true },
-    include: {
-      club: true,
-      user: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          department: { select: { name: true } },
-        },
+  const [authorities, clubs, faculty] = await Promise.all([
+    prisma.clubAuthority.findMany({
+      where: { isActive: true },
+      include: {
+        club: true,
+        user: { select: userOptionSelect },
       },
-    },
+    }),
+    prisma.club.findMany({
+      where: { isActive: true },
+      orderBy: { name: "asc" },
+      select: { id: true, code: true, name: true },
+    }),
+    prisma.user.findMany({
+      where: {
+        isActive: true,
+        role: { code: { in: ["FACULTY", "CLUB_AUTHORITY"] } },
+      },
+      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+      select: userOptionSelect,
+    }),
+  ]);
+
+  return NextResponse.json({
+    success: true,
+    data: { authorities, clubs, faculty },
   });
-
-  const clubs = await prisma.club.findMany({ where: { isActive: true } });
-
-  return NextResponse.json({ success: true, data: { authorities, clubs } });
 }
 
 export async function POST(req: NextRequest) {

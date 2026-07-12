@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthorityManager } from "@/components/authorities/authority-manager";
 import { ClubAuthorityManager } from "@/components/authorities/club-authority-manager";
 import { FacultyRoster } from "@/components/authorities/faculty-roster";
@@ -24,6 +24,17 @@ export function StaffRolesHub({
   viewer?: SessionUser;
 }) {
   const [tab, setTab] = useState<TabId>(initialTab);
+  const [visited, setVisited] = useState<Record<TabId, boolean>>({
+    hod: true,
+    university: initialTab === "university",
+    // Load clubs in the background so the tab does not flash "No clubs"
+    clubs: true,
+    roster: initialTab === "roster",
+  });
+
+  useEffect(() => {
+    setVisited((prev) => (prev[tab] ? prev : { ...prev, [tab]: true }));
+  }, [tab]);
 
   return (
     <div className="space-y-6">
@@ -44,8 +55,8 @@ export function StaffRolesHub({
         ))}
       </div>
 
-      {tab === "hod" && (
-        <div className="space-y-2">
+      {visited.hod && (
+        <div className={tab === "hod" ? "space-y-2" : "hidden"}>
           <p className="text-sm text-slate-500">
             Each department has its own HOD login. Faculty in that department raise requests; the
             HOD approves department-section requests.
@@ -54,8 +65,8 @@ export function StaffRolesHub({
         </div>
       )}
 
-      {tab === "university" && (
-        <div className="space-y-2">
+      {visited.university && (
+        <div className={tab === "university" ? "space-y-2" : "hidden"}>
           <p className="text-sm text-slate-500">
             Assign IQAC, PMSEB, HR, and COE — search faculty by name, email, or employee ID.
           </p>
@@ -63,14 +74,20 @@ export function StaffRolesHub({
         </div>
       )}
 
-      {tab === "clubs" && <ClubAuthorityManager />}
+      {visited.clubs && (
+        <div className={tab === "clubs" ? "block" : "hidden"}>
+          <ClubAuthorityManager />
+        </div>
+      )}
 
-      {tab === "roster" && (
-        <FacultyRoster
-          viewer={viewer}
-          allowEdit={viewer ? canEditUsers(viewer) : false}
-          allowDelete={viewer ? canDeleteUsers(viewer) : false}
-        />
+      {visited.roster && (
+        <div className={tab === "roster" ? "block" : "hidden"}>
+          <FacultyRoster
+            viewer={viewer}
+            allowEdit={viewer ? canEditUsers(viewer) : false}
+            allowDelete={viewer ? canDeleteUsers(viewer) : false}
+          />
+        </div>
       )}
     </div>
   );
