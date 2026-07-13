@@ -42,6 +42,9 @@ export default function LoginPage() {
   useEffect(() => {
     let cancelled = false;
 
+    // Wake the Render instance before the user clicks Sign in
+    void fetch("/api/auth/csrf", { credentials: "same-origin" }).catch(() => {});
+
     async function loadLoginOptions() {
       try {
         const res = await fetch("/api/auth/login-options");

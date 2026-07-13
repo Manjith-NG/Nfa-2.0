@@ -1,4 +1,4 @@
-const AUTH_FETCH_TIMEOUT_MS = 30_000;
+const AUTH_FETCH_TIMEOUT_MS = 90_000;
 
 async function fetchAuth(
   url: string,
@@ -16,7 +16,7 @@ async function fetchAuth(
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new Error(
-        "Sign in timed out. Check your connection and try again. Use Faculty ID as the password."
+        "Server is waking up (Render cold start). Wait 20–30 seconds, refresh, then sign in again with your Faculty ID."
       );
     }
     throw err;

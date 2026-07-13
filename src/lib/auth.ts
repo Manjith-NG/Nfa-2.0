@@ -1,6 +1,5 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { ensureDemoAccounts } from "@/lib/bootstrap/ensure-system-admin";
 import { authenticateUser } from "@/lib/services/auth-service";
 import type { SessionUser } from "@/types";
 import type { RoleCode } from "@prisma/client";
@@ -15,14 +14,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-        const email = credentials.email.toLowerCase().trim();
-        if (email === "admin@gcu.edu.in" || email === "developer@gcu.edu.in") {
-          try {
-            await ensureDemoAccounts();
-          } catch {
-            // Continue — authenticateUser will fail if account still missing
-          }
-        }
+        // Authenticate only — do not bootstrap/migrate here (that timed out on Render).
         return authenticateUser(credentials.email, credentials.password);
       },
     }),

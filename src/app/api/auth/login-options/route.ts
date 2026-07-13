@@ -11,7 +11,11 @@ const DB_SETUP_HINT =
 /** Public list of demo login accounts sourced from the `users` table. */
 export async function GET() {
   try {
-    await ensureDemoAccounts();
+    // Non-blocking: never delay the login page on bootstrap
+    void ensureDemoAccounts().catch((error) => {
+      console.warn("login-options bootstrap:", error);
+    });
+
     const data = await getLoginOptions();
     if (data.length === 0) {
       return NextResponse.json({
