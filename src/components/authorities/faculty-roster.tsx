@@ -38,6 +38,7 @@ export function FacultyRoster({
 }) {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [migrating, setMigrating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
@@ -48,6 +49,26 @@ export function FacultyRoster({
     const d = await res.json();
     if (d.success) setUsers(d.data);
     setLoading(false);
+  }
+
+  async function migratePasswords() {
+    setMigrating(true);
+    try {
+      const res = await fetch("/api/users/migrate-passwords", { method: "POST" });
+      const data = await res.json();
+      if (!data.success) {
+        alert(data.error ?? "Password migration failed");
+        return;
+      }
+      alert(
+        `Passwords updated.\nScanned: ${data.data.scanned}\nUpdated: ${data.data.updated}\nAlready OK: ${data.data.skipped}`
+      );
+      await loadUsers();
+    } catch {
+      alert("Password migration failed");
+    } finally {
+      setMigrating(false);
+    }
   }
 
   useEffect(() => {
@@ -99,7 +120,26 @@ export function FacultyRoster({
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-slate-500">{scopeLabel}</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-slate-500">{scopeLabel}</p>
+        {allowEdit && (
+          <button
+            type="button"
+            className="nfa-btn-secondary text-xs"
+            disabled={migrating}
+            onClick={migratePasswords}
+          >
+            {migrating ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Updating passwords…
+              </>
+            ) : (
+              "Reset defaults to Faculty ID"
+            )}
+          </button>
+        )}
+      </div>
       {byDepartment.length === 0 ? (
         <div className="nfa-card py-10 text-center text-slate-500">No staff found</div>
       ) : (

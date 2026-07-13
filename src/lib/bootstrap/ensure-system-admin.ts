@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/db";
-import { DEMO_LOGIN_PASSWORD } from "@/lib/demo-users";
 import { defaultPasswordForEmployeeId } from "@/lib/user-password";
+import { migrateLegacyPasswordsToFacultyId } from "@/lib/bootstrap/migrate-faculty-id-passwords";
 
 const DEMO_ACCOUNTS = [
   {
@@ -19,55 +19,6 @@ const DEMO_ACCOUNTS = [
     departmentCode: "ADMIN",
   },
 ] as const;
-
-/**
- * Move users still on the legacy demo password (password123) to Faculty ID passwords.
- * Leaves custom passwords alone when passwordHint already stores a non-default value.
- */
-async function migrateLegacyPasswordsToFacultyId(): Promise<void> {
-  const legacyHintUsers = await prisma.user.findMany({
-    where: { isActive: true, passwordHint: DEMO_LOGIN_PASSWORD },
-    select: { id: true, employeeId: true },
-  });
-
-  for (const user of legacyHintUsers) {
-    const facultyId = defaultPasswordForEmployeeId(user.employeeId);
-    if (!facultyId) continue;
-    const passwordHash = await bcrypt.hash(facultyId, 10);
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash, passwordHint: facultyId },
-    });
-  }
-
-  const nullHintUsers = await prisma.user.findMany({
-    where: { isActive: true, passwordHint: null },
-    select: { id: true, employeeId: true, passwordHash: true },
-  });
-
-  for (const user of nullHintUsers) {
-    const facultyId = defaultPasswordForEmployeeId(user.employeeId);
-    if (!facultyId) continue;
-
-    const isLegacyDefault = await bcrypt.compare(DEMO_LOGIN_PASSWORD, user.passwordHash);
-    if (isLegacyDefault) {
-      const passwordHash = await bcrypt.hash(facultyId, 10);
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { passwordHash, passwordHint: facultyId },
-      });
-      continue;
-    }
-
-    const alreadyFacultyId = await bcrypt.compare(facultyId, user.passwordHash);
-    if (alreadyFacultyId) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { passwordHint: facultyId },
-      });
-    }
-  }
-}
 
 /** Upsert system admin and developer demo accounts (safe on every deploy/start). */
 export async function ensureDemoAccounts(): Promise<void> {
@@ -106,28 +57,29 @@ export async function ensureDemoAccounts(): Promise<void> {
       continue;
     }
 
-    const shouldResetToFacultyId =
-      !existing.passwordHint ||
-      existing.passwordHint === DEMO_LOGIN_PASSWORD ||
-      (await bcrypt.compare(DEMO_LOGIN_PASSWORD, existing.passwordHash));
-
+    // Always keep demo accounts on Faculty ID passwords (employeeId = password)
     await prisma.user.update({
       where: { email: account.email },
       data: {
+        employeeId: account.employeeId,
+        passwordHash,
+        passwordHint: plainPassword,
         firstName: account.firstName,
         lastName: account.lastName,
         roleId: adminRole.id,
         departmentId: department?.id ?? null,
         isActive: true,
-        ...(shouldResetToFacultyId
-          ? { passwordHash, passwordHint: plainPassword }
-          : {}),
       },
     });
   }
 
   try {
-    await migrateLegacyPasswordsToFacultyId();
+    const result = await migrateLegacyPasswordsToFacultyId();
+    if (result.updated > 0) {
+      console.info(
+        `[bootstrap] migrated ${result.updated}/${result.scanned} users to Faculty ID passwords`
+      );
+    }
   } catch (error) {
     console.warn("[bootstrap] faculty-id password migration skipped:", error);
   }
