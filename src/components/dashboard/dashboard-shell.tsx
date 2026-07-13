@@ -97,16 +97,19 @@ export function DashboardSection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="nfa-card overflow-hidden p-0">
-      <div className="flex items-center justify-between border-b border-nfa-border px-4 py-3 sm:px-6 sm:py-4">
-        <h3 className="text-sm font-semibold text-slate-900 sm:text-base">{title}</h3>
+    <section className="nfa-card min-w-0 overflow-hidden p-0">
+      <div className="flex items-center justify-between gap-3 border-b border-nfa-border px-4 py-3 sm:px-6 sm:py-4">
+        <h3 className="min-w-0 text-sm font-semibold text-slate-900 sm:text-base">{title}</h3>
         {href && linkLabel && (
-          <Link href={href} className="text-sm font-medium text-nfa-primary hover:underline">
+          <Link
+            href={href}
+            className="shrink-0 text-sm font-medium text-nfa-primary hover:underline"
+          >
             {linkLabel}
           </Link>
         )}
       </div>
-      <div className="p-4 sm:p-6">{children}</div>
+      <div className="min-w-0 overflow-x-auto p-4 sm:p-6">{children}</div>
     </section>
   );
 }

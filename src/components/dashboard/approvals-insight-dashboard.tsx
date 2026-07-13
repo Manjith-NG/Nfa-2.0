@@ -31,7 +31,7 @@ const roleIcons: Partial<Record<RoleCode, LucideIcon>> = {
 };
 
 const stageGridClass =
-  "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6";
+  "grid w-full min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
 function resendLabel(roleCode: RoleCode): string {
   return roleCode === "HOD" || roleCode === "COE" ? "Resend" : "Recheck";
@@ -81,15 +81,20 @@ function RoleQueueCard({ card }: { card: ApprovalsInsightCard }) {
   ] as const;
 
   return (
-    <article className="flex h-full flex-col rounded-xl border border-nfa-border bg-white p-4 shadow-card">
+    <article className="flex h-full min-w-0 flex-col rounded-xl border border-nfa-border bg-white p-4 shadow-card">
       <Link
         href={card.filterHref}
-        className="mb-3 flex items-start gap-2.5 transition-opacity hover:opacity-90"
+        className="mb-3 flex min-w-0 items-start gap-2.5 transition-opacity hover:opacity-90"
       >
         <RoleIcon roleCode={card.roleCode} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h4 className="text-sm font-bold leading-tight text-slate-900">{card.label}</h4>
+            <h4
+              className="line-clamp-2 min-w-0 text-sm font-bold leading-tight text-slate-900"
+              title={card.label}
+            >
+              {card.label}
+            </h4>
             <span className="shrink-0 text-sm font-bold tabular-nums text-nfa-primary">
               {card.total} Total
             </span>

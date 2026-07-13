@@ -47,7 +47,7 @@ export function AppShell({
 
         <div
           className={cn(
-            "transition-all duration-300",
+            "min-w-0 transition-all duration-300",
             "ml-0 md:ml-[var(--sidebar-width)]",
             collapsed && "md:ml-[68px]"
           )}
@@ -57,7 +57,7 @@ export function AppShell({
             onMenuClick={() => setMobileOpen((open) => !open)}
             menuOpen={mobileOpen}
           />
-          <main className="p-4 sm:p-6">{children}</main>
+          <main className="min-w-0 max-w-full overflow-x-hidden p-4 sm:p-6">{children}</main>
         </div>
       </div>
     </NavigationProvider>
