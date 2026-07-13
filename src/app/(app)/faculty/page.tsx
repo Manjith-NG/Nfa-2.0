@@ -26,7 +26,7 @@ export default function FacultyPage() {
     departmentId: "",
     designationId: "",
     positionId: "",
-    password: "password123",
+    password: "",
   });
 
   useEffect(() => {
@@ -56,7 +56,10 @@ export default function FacultyPage() {
     const data = await res.json();
     setLoading(false);
     if (data.success) {
-      alert(`Faculty ${form.firstName} ${form.lastName} created. Default password: ${form.password}`);
+      const initialPassword = form.password.trim() || form.employeeId;
+      alert(
+        `Faculty ${form.firstName} ${form.lastName} created.\nLogin password (Faculty ID): ${initialPassword}`
+      );
       setForm({
         employeeId: "",
         email: "",
@@ -66,7 +69,7 @@ export default function FacultyPage() {
         departmentId: form.departmentId,
         designationId: "",
         positionId: "",
-        password: "password123",
+        password: "",
       });
     } else {
       alert(data.error ?? "Failed to create faculty");
@@ -79,7 +82,7 @@ export default function FacultyPage() {
         <h2 className="text-2xl font-semibold text-slate-900">Add Faculty</h2>
         <p className="text-slate-500">
           Register faculty one at a time or use the CSV template for bulk onboarding. New accounts
-          log in with their email and the initial password you set.
+          log in with their email and Faculty ID (Employee ID) as the default password.
         </p>
       </div>
 
@@ -205,13 +208,17 @@ export default function FacultyPage() {
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="nfa-label">Initial Password</label>
+              <label className="nfa-label">Initial Password (optional)</label>
               <input
                 className="nfa-input"
                 value={form.password}
+                placeholder="Leave blank to use Faculty ID"
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
               />
-              <p className="mt-1 text-xs text-slate-500">Share securely with the faculty member</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Default password is the Faculty / Employee ID. Share it securely with the faculty
+                member.
+              </p>
             </div>
           </div>
           <button type="submit" className="nfa-btn-primary" disabled={loading}>

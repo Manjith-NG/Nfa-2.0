@@ -5,7 +5,7 @@ import { canDeleteUsers, canEditUsers, hasPermission } from "@/lib/rbac";
 import { createAuditLog } from "@/lib/audit";
 import { PROTECTED_SYSTEM_EMAILS } from "@/lib/constants";
 import { DEMO_LOGIN_PASSWORD } from "@/lib/demo-users";
-import { resolveLoginPassword } from "@/lib/user-password";
+import { defaultPasswordForEmployeeId, resolveLoginPassword } from "@/lib/user-password";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 
@@ -23,7 +23,11 @@ const updateSchema = z.object({
   departmentId: z.string().optional().nullable(),
   designationId: z.string().optional().nullable(),
   positionId: z.string().optional().nullable(),
-  password: z.string().min(6).optional(),
+  /** Allow Faculty ID length; blank means leave password unchanged */
+  password: z
+    .string()
+    .optional()
+    .transform((v) => (v?.trim() ? v.trim() : undefined)),
 });
 
 const userSelect = {
@@ -75,15 +79,19 @@ export async function GET(
     };
     const loginPassword = await resolveLoginPassword(
       developerProfile.passwordHash,
-      developerProfile.passwordHint
+      developerProfile.passwordHint,
+      developerProfile.employeeId
     );
     const { passwordHash: _hash, passwordHint: _hint, ...safeProfile } = developerProfile;
+    const facultyDefault = defaultPasswordForEmployeeId(developerProfile.employeeId);
     return NextResponse.json({
       success: true,
       data: {
         ...safeProfile,
-        loginPassword: loginPassword,
-        loginPasswordIsEstimated: !developerProfile.passwordHint && loginPassword === DEMO_LOGIN_PASSWORD,
+        loginPassword,
+        loginPasswordIsEstimated:
+          !developerProfile.passwordHint &&
+          (loginPassword === facultyDefault || loginPassword === DEMO_LOGIN_PASSWORD),
         loginPasswordKnown: Boolean(loginPassword),
       },
     });
@@ -179,7 +187,11 @@ export async function PATCH(
 
     const loginPassword = data.password
       ? data.password
-      : await resolveLoginPassword(updated.passwordHash, updated.passwordHint);
+      : await resolveLoginPassword(
+          updated.passwordHash,
+          updated.passwordHint,
+          updated.employeeId
+        );
 
     const { passwordHash: _hash, passwordHint: _hint, ...safeUpdated } = updated;
 

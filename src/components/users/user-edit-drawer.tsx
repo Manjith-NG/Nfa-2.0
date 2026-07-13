@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Loader2, X } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/constants";
-import { DEMO_LOGIN_PASSWORD } from "@/lib/demo-users";
 import type { RoleCode } from "@prisma/client";
 
 type MasterOption = { id: string; name: string };
@@ -50,7 +49,7 @@ export function UserEditDrawer({
     positionId: "",
   });
   const [roleCode, setRoleCode] = useState<RoleCode>("FACULTY");
-  const [loginPassword, setLoginPassword] = useState<string | null>(DEMO_LOGIN_PASSWORD);
+  const [loginPassword, setLoginPassword] = useState<string | null>(null);
   const [passwordIsEstimated, setPasswordIsEstimated] = useState(false);
   const [passwordUnknown, setPasswordUnknown] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -234,7 +233,7 @@ export function UserEditDrawer({
                   )}
                   {passwordIsEstimated && loginPassword && (
                     <p className="mt-1 text-xs text-amber-600">
-                      Likely still the default import password. Set a new password below to confirm.
+                      Likely the default Faculty ID password. Set a new password below to confirm.
                     </p>
                   )}
                   {passwordUnknown && !loginPassword && (

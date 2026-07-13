@@ -82,7 +82,7 @@ const SAMPLE_ROW: FacultyImportRow = {
   departmentCode: "CS",
   designationCode: "FACULTY",
   positionCode: "ASST_PROFESSOR",
-  password: "password123",
+  password: "2004",
 };
 
 function capitalize(value: string): string {
@@ -187,7 +187,9 @@ export function normalizeFacultyImportRow(row: FacultyImportRow): FacultyImportR
     : undefined;
 
   const normalizedPassword =
-    !password || password.length < 6 || password === employeeId ? "password123" : password;
+    password && password.trim() && password.toLowerCase() !== "password123"
+      ? password.trim()
+      : employeeId;
 
   return {
     ...row,
@@ -253,21 +255,21 @@ function parseCompactRow(cells: string[]): FacultyImportRow | null {
   let departmentCode = "";
   let roleCode = "FACULTY";
   let positionField = "";
-  let password = "password123";
+  let password = employeeId;
 
   if (cells[1]?.includes("@")) {
     email = cells[1];
     departmentCode = cells[2] ?? "";
     roleCode = cells[3] ?? "FACULTY";
     positionField = cells[4] ?? "";
-    password = cells[5] ?? "password123";
+    password = cells[5] ?? employeeId;
   } else {
     name = cells[1] ?? "";
     email = cells[2] ?? "";
     departmentCode = cells[3] ?? "";
     roleCode = cells[4] ?? "FACULTY";
     positionField = cells[5] ?? "";
-    password = cells[6] ?? "password123";
+    password = cells[6] ?? employeeId;
   }
 
   if (!email.includes("@")) return null;
@@ -284,7 +286,9 @@ function parseCompactRow(cells: string[]): FacultyImportRow | null {
     designationCode: roleCode,
     roleCode,
     positionCode: split.positionCode ?? positionField,
-    password: split.password ?? (password.includes("password") ? "password123" : password),
+    password:
+      split.password ??
+      (password.toLowerCase().includes("password") ? employeeId : password),
   };
 }
 

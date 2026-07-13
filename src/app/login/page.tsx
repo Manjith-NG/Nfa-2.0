@@ -6,14 +6,14 @@ import { useSession } from "next-auth/react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { BrandLogo } from "@/components/layout/brand-logo";
 import { APP_NAME, APP_FULL_NAME, UNIVERSITY_NAME } from "@/lib/constants";
-import { DEMO_LOGIN_PASSWORD, FALLBACK_LOGIN_OPTIONS } from "@/lib/demo-users";
+import { FALLBACK_LOGIN_OPTIONS } from "@/lib/demo-users";
 import { signInWithCredentials } from "@/lib/auth-client";
 import type { LoginOption } from "@/lib/services/auth-service";
 
 export default function LoginPage() {
   const { status } = useSession();
   const [email, setEmail] = useState("faculty.cse@gcu.edu.in");
-  const [password, setPassword] = useState(DEMO_LOGIN_PASSWORD);
+  const [password, setPassword] = useState("FAC001");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -91,7 +91,7 @@ export default function LoginPage() {
         setError(
           dbWarning
             ? `${message} ${dbWarning}`
-            : `${message} Use demo password "${DEMO_LOGIN_PASSWORD}" for seeded accounts.`
+            : `${message} Default password is your Faculty ID (Employee ID).`
         );
       } else {
         setError(message);
@@ -101,8 +101,9 @@ export default function LoginPage() {
   }
 
   function quickLogin(demoEmail: string) {
+    const option = loginOptions.find((u) => u.email === demoEmail);
     setEmail(demoEmail);
-    setPassword(DEMO_LOGIN_PASSWORD);
+    setPassword(option?.employeeId ?? "");
     setDemoPick(demoEmail);
   }
 
@@ -212,8 +213,8 @@ export default function LoginPage() {
 
           <div className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 px-7 py-3.5 sm:px-8">
             <p className="text-[11px] leading-tight text-slate-600">
-              Demo password{" "}
-              <code className="font-semibold text-nfa-primary">{DEMO_LOGIN_PASSWORD}</code>
+              Default password is your{" "}
+              <code className="font-semibold text-nfa-primary">Faculty ID</code>
             </p>
             <select
               id="demo-select"

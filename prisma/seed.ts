@@ -8,8 +8,6 @@ import { DEFAULT_ACADEMIC_SECTIONS } from "../src/lib/services/academic-section-
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("password123", 10);
-
   const roles: { code: RoleCode; name: string }[] = [
     { code: "FACULTY", name: "Faculty" },
     { code: "HOD", name: "Head of Department" },
@@ -239,12 +237,14 @@ async function main() {
 
   for (const u of users) {
     const role = await getRole(u.role);
+    const passwordHash = await bcrypt.hash(u.employeeId, 10);
     const user = await prisma.user.upsert({
       where: { email: u.email },
       create: {
         employeeId: u.employeeId,
         email: u.email,
         passwordHash,
+        passwordHint: u.employeeId,
         firstName: u.firstName,
         lastName: u.lastName,
         roleId: role.id,
@@ -254,6 +254,7 @@ async function main() {
       },
       update: {
         passwordHash,
+        passwordHint: u.employeeId,
         firstName: u.firstName,
         lastName: u.lastName,
         roleId: role.id,
@@ -444,8 +445,8 @@ async function main() {
   const { ensureDemoAccounts } = await import("../src/lib/bootstrap/ensure-system-admin");
   await ensureDemoAccounts();
 
-  console.log("\n✅ NFA seed completed. Demo accounts (password: password123):\n");
-  users.forEach((u) => console.log(`  ${u.role.padEnd(16)} ${u.email}`));
+  console.log("\n✅ NFA seed completed. Demo accounts (password = Faculty / Employee ID):\n");
+  users.forEach((u) => console.log(`  ${u.role.padEnd(16)} ${u.email}  /  ${u.employeeId}`));
 }
 
 main()

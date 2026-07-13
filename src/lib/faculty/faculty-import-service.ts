@@ -10,7 +10,7 @@ import {
   type FacultyImportRowResult,
 } from "@/lib/faculty/faculty-import";
 import { departmentDisplayName, mapRoleCode } from "@/lib/faculty/import-mappings";
-import { DEMO_LOGIN_PASSWORD } from "@/lib/demo-users";
+import { defaultPasswordForEmployeeId } from "@/lib/user-password";
 import type { RoleCode } from "@prisma/client";
 
 const rowSchema = z.object({
@@ -247,7 +247,8 @@ export async function importFacultyFromCsv(
       };
 
       if (existing) {
-        const plainPassword = data.password ?? DEMO_LOGIN_PASSWORD;
+        const plainPassword =
+          data.password ?? defaultPasswordForEmployeeId(employeeId);
         const passwordHash = data.password
           ? await bcrypt.hash(data.password, 10)
           : undefined;
@@ -257,7 +258,7 @@ export async function importFacultyFromCsv(
             ...userData,
             ...(passwordHash
               ? { passwordHash, passwordHint: plainPassword }
-              : { passwordHint: plainPassword }),
+              : {}),
           },
         });
 
@@ -282,7 +283,8 @@ export async function importFacultyFromCsv(
         continue;
       }
 
-      const plainPassword = data.password ?? DEMO_LOGIN_PASSWORD;
+      const plainPassword =
+        data.password ?? defaultPasswordForEmployeeId(employeeId);
       const passwordHash = await bcrypt.hash(plainPassword, 10);
       const saved = await prisma.user.create({
         data: {

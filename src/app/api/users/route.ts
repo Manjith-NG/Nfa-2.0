@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { hasPermission, canEditUsers } from "@/lib/rbac";
 import { createAuditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
-import { DEMO_LOGIN_PASSWORD } from "@/lib/demo-users";
+import { defaultPasswordForEmployeeId } from "@/lib/user-password";
 import { z } from "zod";
 
 const createSchema = z.object({
@@ -16,7 +16,10 @@ const createSchema = z.object({
   departmentId: z.string(),
   designationId: z.string().optional(),
   positionId: z.string().optional(),
-  password: z.string().min(6).optional(),
+  password: z
+    .string()
+    .optional()
+    .transform((v) => (v?.trim() ? v.trim() : undefined)),
 });
 
 function canListUsers(user: { roleCode: string; departmentId: string | null }) {
@@ -78,9 +81,10 @@ export async function GET(req: NextRequest) {
   });
 
   const data = canEditUsers(user)
-    ? users.map(({ passwordHint, ...row }) => ({
+    ? users.map(({ passwordHint, employeeId, ...row }) => ({
         ...row,
-        loginPassword: passwordHint ?? null,
+        employeeId,
+        loginPassword: passwordHint ?? employeeId,
       }))
     : users;
 
@@ -101,7 +105,8 @@ export async function POST(req: NextRequest) {
       where: { code: "FACULTY" },
     });
 
-    const password = data.password ?? DEMO_LOGIN_PASSWORD;
+    const password =
+      data.password?.trim() || defaultPasswordForEmployeeId(data.employeeId);
     const passwordHash = await bcrypt.hash(password, 10);
 
     const created = await prisma.user.create({

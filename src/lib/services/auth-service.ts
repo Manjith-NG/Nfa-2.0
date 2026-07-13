@@ -12,6 +12,7 @@ const userAuthInclude = {
 
 export type LoginOption = {
   email: string;
+  employeeId: string;
   roleName: string;
   roleCode: RoleCode;
   label: string;
@@ -51,6 +52,7 @@ export async function getLoginOptions(): Promise<LoginOption[]> {
     }
     options.push({
       email: user.email,
+      employeeId: user.employeeId,
       roleName: user.email === "developer@gcu.edu.in" ? "Developer" : user.role.name,
       roleCode: user.role.code,
       label: user.email === "developer@gcu.edu.in" ? "Developer" : user.role.name,
