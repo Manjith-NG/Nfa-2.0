@@ -99,6 +99,15 @@ function resolveTemplateForRequest(
   );
 }
 
+function shortFlowLabel(role: RoleCode): string {
+  if (role === "CLUB_AUTHORITY") return "Club Auth.";
+  if (role === "HOD") return "HOD";
+  if (role === "HR") return "HR";
+  if (role === "COE") return "COE";
+  if (role === "OFC") return "OFC";
+  return ROLE_LABELS[role] ?? role;
+}
+
 function flowCardLabel(
   template: TemplateRecord,
   firstRole: RoleCode,
@@ -106,10 +115,11 @@ function flowCardLabel(
 ): string {
   if (template.club?.name) return template.club.name;
   if (firstRole === "HOD") return "HOD";
-  if (firstRole === "HR") return ROLE_LABELS.HR;
+  if (firstRole === "HR") return "HR";
+  if (firstRole === "COE") return "COE";
   if (firstRole === "CLUB_AUTHORITY") return "Club Admin";
   if (sectionName) return sectionName;
-  return ROLE_LABELS[firstRole] ?? template.name;
+  return shortFlowLabel(firstRole);
 }
 
 function buildCardLinks(template: TemplateRecord, roleCode: RoleCode) {
@@ -242,9 +252,7 @@ async function fetchApprovalsInsight(): Promise<{
       roleCode: firstRole,
       ...stats,
       ...buildCardLinks(template, firstRole),
-      flowSteps: steps.map((role) =>
-        role === "CLUB_AUTHORITY" ? "Club Auth." : (ROLE_LABELS[role] ?? role)
-      ),
+      flowSteps: steps.map((role) => shortFlowLabel(role)),
     });
   }
 
@@ -267,13 +275,11 @@ async function fetchApprovalsInsight(): Promise<{
 
     return {
       key: `pipeline-${roleCode}`,
-      label: roleCode === "OFC" ? "OFC" : (ROLE_LABELS[roleCode] ?? roleCode),
+      label: shortFlowLabel(roleCode),
       roleCode,
       ...stats,
       ...buildPipelineCardLinks(roleCode),
-      flowSteps: activePipelineRoles.map((r) =>
-        r === "OFC" ? "OFC" : (ROLE_LABELS[r] ?? r)
-      ),
+      flowSteps: activePipelineRoles.map((r) => shortFlowLabel(r)),
     };
   });
 
