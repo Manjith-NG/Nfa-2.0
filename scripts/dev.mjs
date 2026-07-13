@@ -32,7 +32,7 @@ const SETUP_HINT = `
   4. Start again:
      npm run dev
 
-  Demo login after seed: faculty.cse@gcu.edu.in / password123
+  Demo login after seed: faculty.cse@gcu.edu.in / FAC001 (Faculty ID)
 `;
 
 function hasValidDatabaseUrl(content) {
@@ -81,7 +81,11 @@ console.log(`
 
   Faculty login:
     Email:    faculty.cse@gcu.edu.in
-    Password: password123
+    Password: FAC001  (Faculty ID)
+
+  Developer:
+    Email:    developer@gcu.edu.in
+    Password: DEV001
 
   First time? Run: npm run setup:env YOUR_DB_PASSWORD && npm run db:seed
 `);

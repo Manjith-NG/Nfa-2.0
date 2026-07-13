@@ -14,6 +14,18 @@ export type PasswordMigrationResult = {
  * Users who already changed their password (hash no longer password123) are left alone.
  */
 export async function migrateLegacyPasswordsToFacultyId(): Promise<PasswordMigrationResult> {
+  // Fast exit when nothing looks legacy (avoids bcrypt over every user)
+  const legacyCandidates = await prisma.user.count({
+    where: {
+      isActive: true,
+      OR: [{ passwordHint: null }, { passwordHint: DEMO_LOGIN_PASSWORD }],
+    },
+  });
+
+  if (legacyCandidates === 0) {
+    return { scanned: 0, updated: 0, skipped: 0 };
+  }
+
   const users = await prisma.user.findMany({
     where: { isActive: true },
     select: {
@@ -60,7 +72,6 @@ export async function migrateLegacyPasswordsToFacultyId(): Promise<PasswordMigra
       continue;
     }
 
-    // Custom password — clear stale password123 hint so developer UI does not lie
     if (user.passwordHint === DEMO_LOGIN_PASSWORD) {
       await prisma.user.update({
         where: { id: user.id },

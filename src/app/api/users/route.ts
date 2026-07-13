@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import { hasPermission, canEditUsers } from "@/lib/rbac";
 import { createAuditLog } from "@/lib/audit";
 import bcrypt from "bcryptjs";
-import { migrateLegacyPasswordsToFacultyId } from "@/lib/bootstrap/migrate-faculty-id-passwords";
 import { defaultPasswordForEmployeeId } from "@/lib/user-password";
 import { z } from "zod";
 
@@ -37,15 +36,6 @@ export async function GET(req: NextRequest) {
   const scope = canListUsers(user);
   if (!scope) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  // Developer roster should always show current passwords after Faculty ID migration
-  if (canEditUsers(user)) {
-    try {
-      await migrateLegacyPasswordsToFacultyId();
-    } catch (error) {
-      console.warn("[users] password migration failed:", error);
-    }
   }
 
   const { searchParams } = new URL(req.url);

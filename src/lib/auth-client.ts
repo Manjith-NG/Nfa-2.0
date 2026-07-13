@@ -1,4 +1,4 @@
-const AUTH_FETCH_TIMEOUT_MS = 20_000;
+const AUTH_FETCH_TIMEOUT_MS = 30_000;
 
 async function fetchAuth(
   url: string,
@@ -16,7 +16,7 @@ async function fetchAuth(
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
       throw new Error(
-        "Sign in timed out. Stop the dev server, run npm run dev:clean, then npm run dev."
+        "Sign in timed out. Check your connection and try again. Use Faculty ID as the password."
       );
     }
     throw err;
