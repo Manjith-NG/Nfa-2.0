@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Plus, Trash2, ChevronUp, ChevronDown, Save } from "lucide-react";
+import {
+  Loader2,
+  Plus,
+  Trash2,
+  ChevronUp,
+  ChevronDown,
+  Save,
+  Pencil,
+  X,
+} from "lucide-react";
 import { ROLE_LABELS } from "@/lib/constants";
 import { CONFIGURABLE_WORKFLOW_ROLES } from "@/lib/workflow/resolve";
 import { ALL_SCOPE } from "@/components/ui/scope-chip-picker";
@@ -33,6 +42,12 @@ interface AcademicSectionOption {
   code: string;
 }
 
+type TemplateDraft = {
+  name: string;
+  steps: RoleCode[];
+  isDefault: boolean;
+};
+
 function sectionScopeLabel(template: WorkflowTemplate): string {
   if (template.category !== "ACADEMIC") return "";
   if (template.academicSection?.name) return template.academicSection.name;
@@ -43,6 +58,14 @@ function clubScopeLabel(template: WorkflowTemplate): string {
   if (template.category !== "CLUB") return "";
   if (template.club?.name) return template.club.name;
   return "All clubs";
+}
+
+function rolesForCategory(category: RequestCategory): RoleCode[] {
+  const base = CONFIGURABLE_WORKFLOW_ROLES.filter((r) => r !== "CLUB_AUTHORITY");
+  if (category === "CLUB") {
+    return ["CLUB_AUTHORITY", ...base.filter((r) => r !== "HOD")];
+  }
+  return base;
 }
 
 export function WorkflowTemplateManager({
@@ -58,6 +81,8 @@ export function WorkflowTemplateManager({
     initialAcademicSections
   );
   const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<TemplateDraft | null>(null);
   const [form, setForm] = useState({
     name: "",
     category: "ACADEMIC" as RequestCategory,
@@ -113,14 +138,6 @@ export function WorkflowTemplateManager({
     return club ? `${club.name} requests only` : null;
   }, [form.category, form.academicSectionId, form.clubId, clubs, academicSections]);
 
-  function rolesForCategory(category: RequestCategory): RoleCode[] {
-    const base = CONFIGURABLE_WORKFLOW_ROLES.filter((r) => r !== "CLUB_AUTHORITY");
-    if (category === "CLUB") {
-      return ["CLUB_AUTHORITY", ...base.filter((r) => r !== "HOD")];
-    }
-    return base;
-  }
-
   function toggleStep(role: RoleCode) {
     setForm((prev) => ({
       ...prev,
@@ -132,6 +149,43 @@ export function WorkflowTemplateManager({
 
   function moveStep(index: number, direction: -1 | 1) {
     setForm((prev) => {
+      const next = [...prev.steps];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target], next[index]];
+      return { ...prev, steps: next };
+    });
+  }
+
+  function startEdit(template: WorkflowTemplate) {
+    setEditingId(template.id);
+    setDraft({
+      name: template.name,
+      steps: [...template.steps],
+      isDefault: template.isDefault,
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setDraft(null);
+  }
+
+  function toggleDraftStep(role: RoleCode) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        steps: prev.steps.includes(role)
+          ? prev.steps.filter((r) => r !== role)
+          : [...prev.steps, role],
+      };
+    });
+  }
+
+  function moveDraftStep(index: number, direction: -1 | 1) {
+    setDraft((prev) => {
+      if (!prev) return prev;
       const next = [...prev.steps];
       const target = index + direction;
       if (target < 0 || target >= next.length) return prev;
@@ -198,29 +252,44 @@ export function WorkflowTemplateManager({
     }
   }
 
-  async function saveTemplate(template: WorkflowTemplate) {
+  async function saveEditedTemplate(template: WorkflowTemplate) {
+    if (!draft) return;
+    if (draft.steps.length === 0) {
+      alert("Select at least one approval authority");
+      return;
+    }
+    if (!draft.name.trim()) {
+      alert("Template name is required");
+      return;
+    }
+
     setLoading(true);
     const res = await fetch(`/api/workflow/templates/${template.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: template.name,
-        steps: template.steps,
-        isDefault: template.isDefault,
+        name: draft.name.trim(),
+        steps: draft.steps,
+        isDefault: draft.isDefault,
       }),
     });
     const data = await res.json();
     setLoading(false);
     if (data.success) {
-      load();
-      alert("Template saved");
+      cancelEdit();
+      await load();
+      alert("Template updated");
     } else {
       alert(data.error ?? "Failed to save");
     }
   }
 
   async function removeTemplate(id: string) {
-    if (!confirm("Delete this workflow template permanently? New requests will no longer use this path.")) {
+    if (
+      !confirm(
+        "Delete this workflow template permanently? New requests will no longer use this path."
+      )
+    ) {
       return;
     }
     setLoading(true);
@@ -228,6 +297,7 @@ export function WorkflowTemplateManager({
     const data = await res.json();
     setLoading(false);
     if (data.success) {
+      if (editingId === id) cancelEdit();
       setTemplates((prev) => prev.filter((t) => t.id !== id));
     } else {
       alert(data.error ?? "Failed to delete template");
@@ -342,9 +412,7 @@ export function WorkflowTemplateManager({
               <input
                 type="checkbox"
                 checked={form.isDefault}
-                disabled={
-                  form.academicSectionId === ALL_SCOPE || form.clubId === ALL_SCOPE
-                }
+                disabled={form.academicSectionId === ALL_SCOPE || form.clubId === ALL_SCOPE}
                 onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
               />
               Set as default for this category/scope
@@ -381,16 +449,26 @@ export function WorkflowTemplateManager({
                     {index + 1}. {ROLE_LABELS[role]}
                   </span>
                   <div className="flex gap-1">
-                    <button type="button" className="rounded p-1 hover:bg-white" onClick={() => moveStep(index, -1)}>
+                    <button
+                      type="button"
+                      className="rounded p-1 hover:bg-white"
+                      onClick={() => moveStep(index, -1)}
+                    >
                       <ChevronUp className="h-4 w-4" />
                     </button>
-                    <button type="button" className="rounded p-1 hover:bg-white" onClick={() => moveStep(index, 1)}>
+                    <button
+                      type="button"
+                      className="rounded p-1 hover:bg-white"
+                      onClick={() => moveStep(index, 1)}
+                    >
                       <ChevronDown className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
               ))}
-              <p className="text-xs text-slate-500">→ Registrar → Awaiting final clearance (automatic)</p>
+              <p className="text-xs text-slate-500">
+                → Registrar → Awaiting final clearance (automatic)
+              </p>
             </div>
           )}
         </div>
@@ -408,43 +486,167 @@ export function WorkflowTemplateManager({
             No templates yet. Create one flow per section or club (or one All default).
           </div>
         ) : (
-          templates.map((template) => (
-            <div key={template.id} className="nfa-card space-y-3">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="font-semibold text-slate-900">{template.name}</p>
-                  <p className="text-sm text-slate-500">
-                    {template.category}
-                    {template.category === "ACADEMIC" && ` · ${sectionScopeLabel(template)}`}
-                    {template.category === "CLUB" && ` · ${clubScopeLabel(template)}`}
-                    {template.isDefault ? " · Default" : ""}
+          templates.map((template) => {
+            const isEditing = editingId === template.id && draft;
+            return (
+              <div key={template.id} className="nfa-card space-y-3">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    {isEditing ? (
+                      <div className="space-y-2">
+                        <label className="nfa-label">Template name</label>
+                        <input
+                          className="nfa-input"
+                          value={draft.name}
+                          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <p className="font-semibold text-slate-900">{template.name}</p>
+                        <p className="text-sm text-slate-500">
+                          {template.category}
+                          {template.category === "ACADEMIC" &&
+                            ` · ${sectionScopeLabel(template)}`}
+                          {template.category === "CLUB" && ` · ${clubScopeLabel(template)}`}
+                          {template.isDefault ? " · Default" : ""}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {isEditing ? (
+                      <>
+                        <button
+                          type="button"
+                          className="nfa-btn-primary py-1.5"
+                          onClick={() => saveEditedTemplate(template)}
+                          disabled={loading}
+                        >
+                          {loading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
+                          Save changes
+                        </button>
+                        <button
+                          type="button"
+                          className="nfa-btn-secondary py-1.5"
+                          onClick={cancelEdit}
+                          disabled={loading}
+                        >
+                          <X className="h-4 w-4" />
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="nfa-btn-secondary py-1.5"
+                          onClick={() => startEdit(template)}
+                          disabled={loading || Boolean(editingId)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="nfa-btn-secondary border-red-200 py-1.5 text-red-700"
+                          onClick={() => removeTemplate(template.id)}
+                          disabled={loading}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {isEditing ? (
+                  <div className="space-y-3 border-t border-nfa-border pt-3">
+                    <p className="text-sm text-slate-500">
+                      {template.category}
+                      {template.category === "ACADEMIC" &&
+                        ` · ${sectionScopeLabel(template)}`}
+                      {template.category === "CLUB" && ` · ${clubScopeLabel(template)}`}
+                    </p>
+
+                    <div>
+                      <label className="nfa-label">Add or remove approval authorities</label>
+                      <div className="flex flex-wrap gap-2">
+                        {rolesForCategory(template.category).map((role) => (
+                          <button
+                            key={role}
+                            type="button"
+                            onClick={() => toggleDraftStep(role)}
+                            className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+                              draft.steps.includes(role)
+                                ? "border-nfa-primary bg-nfa-primary/10 text-nfa-primary"
+                                : "border-nfa-border text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {ROLE_LABELS[role]}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {draft.steps.length > 0 && (
+                      <div className="space-y-2 rounded-lg border border-nfa-border bg-slate-50 p-3">
+                        {draft.steps.map((role, index) => (
+                          <div
+                            key={role}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <span className="text-sm font-medium text-slate-800">
+                              {index + 1}. {ROLE_LABELS[role]}
+                            </span>
+                            <div className="flex gap-1">
+                              <button
+                                type="button"
+                                className="rounded p-1 hover:bg-white"
+                                onClick={() => moveDraftStep(index, -1)}
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded p-1 hover:bg-white"
+                                onClick={() => moveDraftStep(index, 1)}
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <p className="text-xs text-slate-500">
+                          → Registrar → Awaiting final clearance (automatic)
+                        </p>
+                      </div>
+                    )}
+
+                    <label className="flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={draft.isDefault}
+                        onChange={(e) =>
+                          setDraft({ ...draft, isDefault: e.target.checked })
+                        }
+                      />
+                      Set as default for this category/scope
+                    </label>
+                  </div>
+                ) : (
+                  <p className="text-sm text-slate-700">
+                    {template.steps.map((r) => ROLE_LABELS[r]).join(" → ")} → Registrar →
+                    Awaiting final clearance
                   </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    className="nfa-btn-secondary py-1.5"
-                    onClick={() => saveTemplate(template)}
-                    disabled={loading}
-                  >
-                    <Save className="h-4 w-4" />
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    className="nfa-btn-secondary border-red-200 py-1.5 text-red-700"
-                    onClick={() => removeTemplate(template.id)}
-                    disabled={loading}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+                )}
               </div>
-              <p className="text-sm text-slate-700">
-                {template.steps.map((r) => ROLE_LABELS[r]).join(" → ")} → Registrar → Awaiting final clearance
-              </p>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
