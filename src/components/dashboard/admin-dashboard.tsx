@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   Building2,
   CheckCircle,
@@ -86,7 +87,14 @@ export function AdminDashboard({
         ]}
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Link href="/users" className="nfa-card flex items-center gap-3 py-4 transition-shadow hover:shadow-card-hover">
+          <Users className="h-5 w-5 text-nfa-primary" />
+          <div>
+            <p className="text-xs text-slate-500">User Management</p>
+            <p className="text-sm font-semibold text-slate-900">View all staff</p>
+          </div>
+        </Link>
         <div className="nfa-card flex items-center gap-3 py-4">
           <Building2 className="h-5 w-5 text-nfa-primary" />
           <div>
