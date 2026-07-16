@@ -1,0 +1,519 @@
+// NFA – Note For Approval System
+// Enterprise-grade normalized schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── ENUMS ───────────────────────────────────────────────────────────────
+
+enum RoleCode {
+  FACULTY
+  HOD
+  CLUB_AUTHORITY
+  IQAC
+  PMSEB
+  HR
+  COE
+  REGISTRAR
+  OFC
+  ADMIN
+}
+
+enum RequestCategory {
+  ACADEMIC
+  CLUB
+}
+
+enum RequestStatus {
+  DRAFT
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  RESEND
+  FORWARDED
+  COMPLETED
+}
+
+enum ApprovalAction {
+  SUBMIT
+  APPROVE
+  REJECT
+  RESEND
+  FORWARD
+  COMMENT
+  REASSIGN
+}
+
+enum AuthorityAssignmentType {
+  TEMPORARY
+  PERMANENT
+}
+
+enum NotificationType {
+  REQUEST_SUBMITTED
+  APPROVAL_PENDING
+  APPROVED
+  REJECTED
+  RESEND
+  REQUEST_COMPLETED
+  AUTHORITY_CHANGED
+  COMMENT_ADDED
+}
+
+enum InputProcessOutcome {
+  INPUT
+  PROCESS
+  OUTCOME
+}
+
+// ─── MASTER DATA ─────────────────────────────────────────────────────────
+
+model Role {
+  id          String   @id @default(cuid())
+  code        RoleCode @unique
+  name        String
+  description String?
+  permissions Json     @default("[]")
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("roles")
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  hodId     String?  @unique
+  hod       User?    @relation("DepartmentHOD", fields: [hodId], references: [id])
+  users     User[]   @relation("DepartmentUsers")
+  requests  Request[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@map("departments")
+}
+
+model StatusMaster {
+  id        String        @id @default(cuid())
+  code      RequestStatus @unique
+  label     String
+  color     String
+  sortOrder Int           @default(0)
+  createdAt DateTime      @default(now())
+
+  @@map("status_master")
+}
+
+model RequestType {
+  id          String          @id @default(cuid())
+  code        String          @unique
+  name        String
+  category    RequestCategory
+  description String?
+  isActive    Boolean         @default(true)
+  requests    Request[]
+  workflowTemplates WorkflowTemplate[]
+  createdAt   DateTime        @default(now())
+
+  @@map("request_types")
+}
+
+model Club {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  name        String
+  description String?
+  isActive    Boolean          @default(true)
+  authorities ClubAuthority[]
+  requests    Request[]
+  workflowTemplates WorkflowTemplate[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("clubs")
+}
+
+model AcademicSectionMaster {
+  id          String              @id @default(cuid())
+  code        String              @unique
+  name        String
+  description String?
+  /** First approver role before shared pipeline (Registrar + OFC added automatically) */
+  entryRole   RoleCode            @default(IQAC)
+  isActive    Boolean             @default(true)
+  requests    Request[]
+  workflowTemplates WorkflowTemplate[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@map("academic_section_master")
+}
+
+model NaacCriterion {
+  id                  String              @id @default(cuid())
+  number              Int                 @unique
+  title               String
+  inputProcessOutcome InputProcessOutcome
+  sortOrder           Int                 @default(0)
+  isActive            Boolean             @default(true)
+  metrics             Metric[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@map("naac_criteria")
+}
+
+model Metric {
+  id          String        @id @default(cuid())
+  code        String        @unique
+  title       String
+  description String?
+  criterionId String
+  criterion   NaacCriterion @relation(fields: [criterionId], references: [id], onDelete: Cascade)
+  sortOrder   Int           @default(0)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([criterionId])
+  @@map("metrics")
+}
+
+model Designation {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  name        String
+  sortOrder   Int       @default(0)
+  isActive    Boolean   @default(true)
+  users       User[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("designations")
+}
+
+model EmployeePosition {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("employee_positions")
+}
+
+// ─── USERS ───────────────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  employeeId     String    @unique
+  email          String    @unique
+  passwordHash   String
+  passwordHint   String?
+  firstName      String
+  lastName       String
+  phone          String?
+  roleId         String
+  role           Role      @relation(fields: [roleId], references: [id])
+  departmentId   String?
+  department     Department? @relation("DepartmentUsers", fields: [departmentId], references: [id])
+  designationId  String?
+  designation    Designation? @relation(fields: [designationId], references: [id])
+  positionId     String?
+  position       EmployeePosition? @relation(fields: [positionId], references: [id])
+  hodDepartment  Department? @relation("DepartmentHOD")
+  isActive       Boolean   @default(true)
+  lastLoginAt    DateTime?
+
+  requestsRaised     Request[]         @relation("RequestRaisedBy")
+  approvalHistory    ApprovalHistory[]
+  remarks            Remark[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  clubAuthorities    ClubAuthority[]
+  authorityMappings  AuthorityMapping[] @relation("AuthorityUser")
+  assignedByMappings AuthorityMapping[] @relation("AssignedByUser")
+  workflowLogs       WorkflowLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roleId])
+  @@index([departmentId])
+  @@index([designationId])
+  @@index([positionId])
+  @@index([email])
+  @@map("users")
+}
+
+// ─── CLUB AUTHORITIES ────────────────────────────────────────────────────
+
+model ClubAuthority {
+  id        String   @id @default(cuid())
+  clubId    String
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  isActive  Boolean  @default(true)
+  assignedBy String?
+  assignedAt DateTime @default(now())
+  expiresAt  DateTime?
+
+  @@unique([clubId, userId])
+  @@index([userId])
+  @@map("club_authorities")
+}
+
+// ─── AUTHORITY MAPPING (IQAC, PMSEB, COE, etc.) ──────────────────────────
+
+model AuthorityMapping {
+  id             String                  @id @default(cuid())
+  roleCode       RoleCode
+  userId         String
+  user           User                    @relation("AuthorityUser", fields: [userId], references: [id])
+  departmentId   String?
+  assignmentType AuthorityAssignmentType @default(PERMANENT)
+  isActive       Boolean                 @default(true)
+  assignedById   String?
+  assignedBy     User?                   @relation("AssignedByUser", fields: [assignedById], references: [id])
+  startDate      DateTime                @default(now())
+  endDate        DateTime?
+  reason         String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@index([roleCode, isActive])
+  @@index([userId])
+  @@map("authority_mapping")
+}
+
+// ─── APPROVAL WORKFLOW DEFINITION ────────────────────────────────────────
+
+model WorkflowTemplate {
+  id              String           @id @default(cuid())
+  name            String
+  category        RequestCategory
+  requestTypeId   String?
+  requestType     RequestType?     @relation(fields: [requestTypeId], references: [id])
+  academicSectionId String?
+  academicSection   AcademicSectionMaster? @relation(fields: [academicSectionId], references: [id])
+  clubId          String?
+  club            Club?            @relation(fields: [clubId], references: [id])
+  /** Ordered role codes before Registrar + OFC terminal steps */
+  steps           Json
+  isDefault       Boolean          @default(false)
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([category])
+  @@index([requestTypeId])
+  @@index([academicSectionId])
+  @@index([clubId])
+  @@map("workflow_templates")
+}
+
+model ApprovalWorkflow {
+  id          String          @id @default(cuid())
+  category    RequestCategory
+  stepOrder   Int
+  roleCode    RoleCode
+  stepLabel   String
+  isRequired  Boolean         @default(true)
+  skipForClub Boolean         @default(false)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+
+  @@unique([category, stepOrder])
+  @@index([category])
+  @@map("approval_workflow")
+}
+
+// ─── REQUESTS ────────────────────────────────────────────────────────────
+
+model Request {
+  id              String          @id @default(cuid())
+  requestNumber   String          @unique
+  title           String
+  description     String?
+  category        RequestCategory
+  requestTypeId   String?
+  requestType     RequestType?    @relation(fields: [requestTypeId], references: [id])
+  clubId          String?
+  club            Club?           @relation(fields: [clubId], references: [id])
+  status          RequestStatus   @default(DRAFT)
+  currentStep     Int             @default(0)
+  currentRoleCode RoleCode?
+  /** Snapshot of approval path for this request */
+  workflowPath    Json?
+
+  raisedById    String
+  raisedBy      User       @relation("RequestRaisedBy", fields: [raisedById], references: [id])
+  departmentId  String
+  department    Department @relation(fields: [departmentId], references: [id])
+
+  academicSectionId String?
+  academicSection   AcademicSectionMaster? @relation(fields: [academicSectionId], references: [id])
+  briefNote       String?
+  needForProposal String?
+  proposalDate    DateTime?
+  eventStartDate  DateTime?
+  eventEndDate    DateTime?
+  links           String?
+  naacCategory    String?
+  metricsCategory String?
+
+  budgetAmount           Float?
+  budgetPurpose          String?
+  eventDate              DateTime?
+  venue                  String?
+  expenditures           Json?
+  receivables            Json?
+  grandTotalExpenditure  Float?
+  grandTotalReceivable   Float?
+  budgetDifference       Float?
+  financialDescription   String?
+
+  submittedAt   DateTime?
+  completedAt   DateTime?
+
+  attachments     RequestAttachment[]
+  approvalHistory ApprovalHistory[]
+  remarks         Remark[]
+  workflowLogs    WorkflowLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([raisedById])
+  @@index([departmentId])
+  @@index([status])
+  @@index([category])
+  @@index([academicSectionId])
+  @@index([clubId])
+  @@index([createdAt])
+  @@map("requests")
+}
+
+model RequestAttachment {
+  id           String   @id @default(cuid())
+  requestId    String
+  request      Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  fileName     String
+  filePath     String
+  fileSize     Int
+  mimeType     String
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  @@index([requestId])
+  @@map("request_attachments")
+}
+
+// ─── APPROVAL HISTORY & REMARKS ─────────────────────────────────────────
+
+model ApprovalHistory {
+  id          String         @id @default(cuid())
+  requestId   String
+  request     Request        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  stepOrder   Int
+  roleCode    RoleCode
+  action      ApprovalAction
+  actorId     String
+  actor       User           @relation(fields: [actorId], references: [id])
+  remarks     String?
+  previousStatus RequestStatus?
+  newStatus   RequestStatus?
+  metadata    Json?
+  createdAt   DateTime       @default(now())
+
+  @@index([requestId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@map("approval_history")
+}
+
+model Remark {
+  id        String   @id @default(cuid())
+  requestId String
+  request   Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  content   String
+  isInternal Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([requestId])
+  @@map("remarks")
+}
+
+// ─── NOTIFICATIONS & AUDIT ───────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String
+  entityType String
+  entityId   String?
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model WorkflowLog {
+  id         String   @id @default(cuid())
+  requestId  String
+  request    Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  event      String
+  fromStep   Int?
+  toStep     Int?
+  fromRole   RoleCode?
+  toRole     RoleCode?
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([requestId])
+  @@map("workflow_logs")
+}

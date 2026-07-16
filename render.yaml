@@ -1,0 +1,39 @@
+# Render Blueprint — NFA (Next.js Web Service)
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: nfa-2-0v1
+    runtime: node
+    region: singapore
+    plan: free
+    branch: main
+    repo: https://github.com/Manjith-NG/Nfa-2.0
+    buildCommand: npm install && npm run render-build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "20.11.1"
+      - key: NODE_ENV
+        value: production
+      # Easiest: paste Supabase → Settings → Database → Database password
+      - key: SUPABASE_DB_PASSWORD
+        sync: false
+      # Or set both URLs manually (see .env.example)
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://uuqzhbzovurnlbiuazgh.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: NEXTAUTH_URL
+        value: https://nfa-2-0v1.onrender.com
+      - key: UPLOAD_DIR
+        value: ./uploads
+      - key: RENDER
+        value: "true"
