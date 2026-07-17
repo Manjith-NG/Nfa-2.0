@@ -31,6 +31,13 @@ import { validateApprovalRemarks, validateRequestFormFields } from "@/lib/reques
 
 const HOD_QUEUE_STATUSES: RequestStatus[] = ["PENDING", "UNDER_REVIEW", "FORWARDED"];
 
+/** Draft requests are visible only to the person who created them. */
+export function draftVisibilityWhere(userId: string): Prisma.RequestWhereInput {
+  return {
+    OR: [{ status: { not: "DRAFT" } }, { raisedById: userId }],
+  };
+}
+
 /** Workflow whose first approval step is HOD (department faculty flow). */
 export const hodEntryWorkflowWhere: Prisma.RequestWhereInput = {
   workflowPath: {
@@ -1008,6 +1015,8 @@ export function buildRequestWhere(
       ],
     });
   }
+
+  andConditions.push(draftVisibilityWhere(user.id));
 
   if (andConditions.length === 1) return andConditions[0];
   return { AND: andConditions };

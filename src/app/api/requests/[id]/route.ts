@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/session";
+import { getRequestDetailData } from "@/lib/services/request-detail-service";
 import { updateRequest } from "@/lib/services/request-service";
 
 const updateSchema = z.object({
@@ -28,6 +29,20 @@ const updateSchema = z.object({
 
 function parseDate(value?: string) {
   return value ? new Date(value) : undefined;
+}
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const data = await getRequestDetailData(user, id);
+  if (!data) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  return NextResponse.json({ success: true, data });
 }
 
 export async function PATCH(

@@ -176,6 +176,9 @@ export function canViewRequest(
   request: RequestViewContext,
   userClubIds?: string[]
 ): boolean {
+  if (request.status === "DRAFT") {
+    return request.raisedById === user.id;
+  }
   if (isSuperAdmin(user.roleCode)) return true;
   if (request.raisedById === user.id) return true;
   if (user.roleCode === "FACULTY") return false;

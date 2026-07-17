@@ -88,6 +88,7 @@ export function RequestDetailClient({
     const res = await fetch(`/api/requests/${id}`);
     const d = await res.json();
     if (d.success) setData(d.data);
+    router.refresh();
   }
 
   async function handleSubmitDraft() {

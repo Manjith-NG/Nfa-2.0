@@ -1,10 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/constants";
 import { CONFIGURABLE_WORKFLOW_ROLES } from "@/lib/workflow/resolve";
 import type { RoleCode } from "@prisma/client";
+
+function stepsFromWorkflow(currentSteps: { roleCode: RoleCode; stepLabel: string }[]) {
+  return currentSteps
+    .filter((s) => !["REGISTRAR", "OFC"].includes(s.roleCode))
+    .map((s) => s.roleCode);
+}
 
 export function RequestWorkflowPanel({
   requestId,
@@ -17,14 +23,18 @@ export function RequestWorkflowPanel({
   currentSteps: { roleCode: RoleCode; stepLabel: string }[];
   canManageWorkflow?: boolean;
   canForward?: boolean;
-  onUpdated: () => void;
+  onUpdated: () => void | Promise<void>;
 }) {
-  const [steps, setSteps] = useState<RoleCode[]>(
-    currentSteps
-      .filter((s) => !["REGISTRAR", "OFC"].includes(s.roleCode))
-      .map((s) => s.roleCode)
+  const workflowKey = useMemo(
+    () => currentSteps.map((step) => step.roleCode).join("→"),
+    [currentSteps]
   );
+  const [steps, setSteps] = useState<RoleCode[]>(() => stepsFromWorkflow(currentSteps));
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setSteps(stepsFromWorkflow(currentSteps));
+  }, [workflowKey, currentSteps]);
 
   if (!canManageWorkflow && !canForward) return null;
 
@@ -37,8 +47,11 @@ export function RequestWorkflowPanel({
     });
     const data = await res.json();
     setLoading(false);
-    if (data.success) onUpdated();
-    else alert(data.error ?? "Failed to update workflow");
+    if (data.success) {
+      await onUpdated();
+    } else {
+      alert(data.error ?? "Failed to update workflow");
+    }
   }
 
   async function forwardTo(targetRole: RoleCode) {
@@ -50,8 +63,11 @@ export function RequestWorkflowPanel({
     });
     const data = await res.json();
     setLoading(false);
-    if (data.success) onUpdated();
-    else alert(data.error ?? "Failed to forward request");
+    if (data.success) {
+      await onUpdated();
+    } else {
+      alert(data.error ?? "Failed to forward request");
+    }
   }
 
   return (
