@@ -81,7 +81,7 @@ export function RegistrarDashboard({
       {(entryCards.length > 0 || pipelineCards.length > 0) && (
         <DashboardSection title="Role Queues" href="/approvals/insight" linkLabel="Open full view">
           <p className="mb-4 text-sm text-slate-500">
-            Approval counts by role — click HOD to view all departments and filter by department.
+            Approval counts by role — click a card, then filter by stage and department using the dropdowns.
           </p>
           <ApprovalsInsightDashboard entryCards={entryCards} pipelineCards={pipelineCards} />
         </DashboardSection>

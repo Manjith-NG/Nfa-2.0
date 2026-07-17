@@ -112,7 +112,7 @@ export function AdminDashboard({
 
       <DashboardSection title="Role Queues">
         <p className="mb-4 text-sm text-slate-500">
-          Click a role or status count to open requests at that approval step. HOD shows all departments — use department filters on the requests page.
+          Click a role or status count to open requests at that approval step. Use the stage and department dropdowns to filter any role queue.
         </p>
         <ApprovalsInsightDashboard entryCards={entryCards} pipelineCards={pipelineCards} />
       </DashboardSection>

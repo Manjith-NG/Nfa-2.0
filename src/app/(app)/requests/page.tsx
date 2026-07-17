@@ -7,6 +7,7 @@ import { listRequestItems } from "@/lib/services/dashboard-service";
 import { getAcademicSectionById } from "@/lib/services/academic-section-service";
 import { listActiveDepartments } from "@/lib/services/org-master-service";
 import { RequestsSearch } from "@/components/requests/requests-search";
+import { RoleQueueFilters } from "@/components/requests/role-queue-filters";
 import { RequestsTable } from "@/components/requests/requests-table";
 import { TableSkeleton } from "@/components/ui/page-skeleton";
 import { ROLE_LABELS } from "@/lib/constants";
@@ -110,9 +111,8 @@ async function RequestsPageContent({
   const departmentId = params.departmentId;
   const statusIn = pending ? PENDING_STATUSES : undefined;
 
-  const showDepartmentFilters =
-    stageRole === "HOD" && isSuperAdmin(user?.roleCode ?? "FACULTY");
-  const departments = showDepartmentFilters ? await listActiveDepartments() : [];
+  const showRoleQueueFilters = Boolean(stageRole && isSuperAdmin(user?.roleCode ?? "FACULTY"));
+  const departments = showRoleQueueFilters ? await listActiveDepartments() : [];
 
   let title = mineOnly ? "My Requests" : isSuperAdmin(user?.roleCode ?? "FACULTY") ? "All Requests" : "My Requests";
   if (user?.roleCode === "CLUB_AUTHORITY" && !mineOnly && !status && !category && !pending && !stageRole) {
@@ -123,12 +123,13 @@ async function RequestsPageContent({
     title = stageOutcome
       ? `${roleLabel} — ${stageOutcomeLabel(stageOutcome, stageRole)}`
       : `${roleLabel} — all stages`;
-    if (departmentId && stageRole === "HOD") {
+    if (departmentId) {
       const dept = departments.find((d) => d.id === departmentId);
       if (dept) {
+        const deptLabel = `${roleLabel} (${dept.name})`;
         title = stageOutcome
-          ? `HOD (${dept.name}) — ${stageOutcomeLabel(stageOutcome, stageRole)}`
-          : `HOD (${dept.name}) — all stages`;
+          ? `${deptLabel} — ${stageOutcomeLabel(stageOutcome, stageRole)}`
+          : `${deptLabel} — all stages`;
       }
     }
   } else if (status === "COMPLETED") title = FILTER_LABELS.COMPLETED;
@@ -155,7 +156,7 @@ async function RequestsPageContent({
       sectionId={sectionId}
       clubId={clubId}
       departmentId={departmentId}
-      showDepartmentFilters={showDepartmentFilters}
+      showRoleQueueFilters={showRoleQueueFilters}
       departments={departments.map((d) => ({ id: d.id, name: d.name, code: d.code }))}
     >
       <Suspense
@@ -190,7 +191,7 @@ function RequestsPageShell({
   sectionId,
   clubId,
   departmentId,
-  showDepartmentFilters,
+  showRoleQueueFilters,
   departments,
   children,
 }: {
@@ -204,12 +205,11 @@ function RequestsPageShell({
   sectionId?: string;
   clubId?: string;
   departmentId?: string;
-  showDepartmentFilters?: boolean;
+  showRoleQueueFilters?: boolean;
   departments?: { id: string; name: string; code: string }[];
   children?: React.ReactNode;
 }) {
   const hasStageFilters = Boolean(stageRole);
-  const filterScope = { category, sectionId, clubId, departmentId };
 
   return (
     <div className="space-y-6">
@@ -219,62 +219,16 @@ function RequestsPageShell({
           <p className="text-slate-500">
             {canCreate ? "Track all your submitted requests" : "Browse and review university requests"}
           </p>
-          {hasStageFilters && stageRole && (
-            <div className="mt-3 space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <FilterChip
-                  href={buildStageHref(stageRole, undefined, filterScope)}
-                  active={!stageOutcome}
-                  label="All"
-                />
-                <FilterChip
-                  href={buildStageHref(stageRole, "accepted", filterScope)}
-                  active={stageOutcome === "accepted"}
-                  label="Accepted"
-                />
-                <FilterChip
-                  href={buildStageHref(stageRole, "pending", filterScope)}
-                  active={stageOutcome === "pending"}
-                  label="Pending"
-                />
-                <FilterChip
-                  href={buildStageHref(stageRole, "resend", filterScope)}
-                  active={stageOutcome === "resend"}
-                  label={stageOutcomeLabel("resend", stageRole)}
-                />
-                <FilterChip
-                  href={buildStageHref(stageRole, "rejected", filterScope)}
-                  active={stageOutcome === "rejected"}
-                  label="Rejected"
-                />
-                <Link href="/approvals/insight" className="text-xs font-medium text-nfa-primary hover:underline">
-                  Back to Role Queues
-                </Link>
-              </div>
-              {showDepartmentFilters && departments && departments.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-medium text-slate-500">Department:</span>
-                  <FilterChip
-                    href={buildStageHref(stageRole, stageOutcome, { category, sectionId, clubId })}
-                    active={!departmentId}
-                    label="All departments"
-                  />
-                  {departments.map((dept) => (
-                    <FilterChip
-                      key={dept.id}
-                      href={buildStageHref(stageRole, stageOutcome, {
-                        category,
-                        sectionId,
-                        clubId,
-                        departmentId: dept.id,
-                      })}
-                      active={departmentId === dept.id}
-                      label={dept.code}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+          {hasStageFilters && stageRole && showRoleQueueFilters && departments && (
+            <RoleQueueFilters
+              stageRole={stageRole}
+              stageOutcome={stageOutcome}
+              category={category}
+              sectionId={sectionId}
+              clubId={clubId}
+              departmentId={departmentId}
+              departments={departments}
+            />
           )}
         </div>
         {canCreate && (
@@ -291,47 +245,5 @@ function RequestsPageShell({
         <div className="p-0">{children ?? <TableSkeleton rows={10} />}</div>
       </div>
     </div>
-  );
-}
-
-function buildStageHref(
-  role: RoleCode,
-  stage?: ReturnType<typeof parseStageOutcome>,
-  scope?: {
-    category?: RequestCategory;
-    sectionId?: string;
-    clubId?: string;
-    departmentId?: string;
-  }
-) {
-  const params = new URLSearchParams({ role });
-  if (stage) params.set("stage", stage);
-  if (scope?.category) params.set("category", scope.category);
-  if (scope?.sectionId) params.set("sectionId", scope.sectionId);
-  if (scope?.clubId) params.set("clubId", scope.clubId);
-  if (scope?.departmentId) params.set("departmentId", scope.departmentId);
-  return `/requests?${params.toString()}`;
-}
-
-function FilterChip({
-  href,
-  label,
-  active,
-}: {
-  href: string;
-  label: string;
-  active: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-        active
-          ? "bg-nfa-primary text-white"
-          : "border border-nfa-border bg-white text-slate-600 hover:border-nfa-primary/40 hover:text-nfa-primary"
-      }`}
-    >
-      {label}
-    </Link>
   );
 }
