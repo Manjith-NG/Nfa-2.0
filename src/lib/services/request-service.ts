@@ -18,6 +18,7 @@ import {
   resolveWorkflowForNewRequest,
   serializeWorkflowPath,
 } from "@/lib/workflow/resolve";
+import type { WorkflowPathStep } from "@/lib/workflow/types";
 import { canViewRequest, canApproveAtStep, canApproveRequests, requestViewContext } from "@/lib/rbac";
 import { getUserClubIds } from "@/lib/club-access";
 import { createAuditLog, logWorkflowEvent } from "@/lib/audit";
@@ -66,6 +67,117 @@ export function hodFacultyQueueWhere(
       { status: { in: HOD_QUEUE_STATUSES } },
     ],
   };
+}
+
+type SubmitWorkflowPosition = {
+  currentStep: number;
+  currentRoleCode: RoleCode | null;
+  status: RequestStatus;
+  autoApprovedSteps: { stepOrder: number; roleCode: RoleCode }[];
+};
+
+/** When HOD raises a department academic request, skip their own HOD approval step(s). */
+export function resolveSubmitWorkflowPosition(
+  user: SessionUser,
+  workflowSteps: WorkflowPathStep[],
+  options: {
+    category: RequestCategory;
+    startStep?: number;
+    startRoleCode?: RoleCode | null;
+  }
+): SubmitWorkflowPosition {
+  const initial = getInitialStep(workflowSteps);
+  let currentStep = options.startStep ?? initial.step;
+  let currentRoleCode: RoleCode | null =
+    options.startRoleCode !== undefined ? options.startRoleCode : initial.roleCode;
+  let status: RequestStatus = "PENDING";
+  const autoApprovedSteps: { stepOrder: number; roleCode: RoleCode }[] = [];
+
+  if (user.roleCode === "HOD" && options.category === "ACADEMIC") {
+    while (currentRoleCode === "HOD") {
+      autoApprovedSteps.push({ stepOrder: currentStep, roleCode: currentRoleCode });
+      const next = getNextStep(workflowSteps, currentStep);
+      if (!next) {
+        const last = workflowSteps[workflowSteps.length - 1];
+        currentStep = last?.stepOrder ?? currentStep;
+        currentRoleCode = null;
+        status = "COMPLETED";
+        break;
+      }
+      currentStep = next.stepOrder;
+      currentRoleCode = next.roleCode;
+    }
+  }
+
+  return { currentStep, currentRoleCode, status, autoApprovedSteps };
+}
+
+async function recordAutoApprovedSteps(
+  requestId: string,
+  userId: string,
+  steps: { stepOrder: number; roleCode: RoleCode }[]
+) {
+  if (steps.length === 0) return;
+
+  await prisma.approvalHistory.createMany({
+    data: steps.map((step) => ({
+      requestId,
+      stepOrder: step.stepOrder,
+      roleCode: step.roleCode,
+      action: "APPROVE",
+      actorId: userId,
+      newStatus: "FORWARDED" as RequestStatus,
+      remarks: "Auto-approved (request raised by HOD)",
+    })),
+  });
+}
+
+async function notifyRequestCompleted(raisedById: string, requestNumber: string, requestId: string) {
+  await createNotification({
+    userId: raisedById,
+    type: "REQUEST_COMPLETED",
+    title: "Request verified",
+    message: `${requestNumber} completed all approvals. Download your approval PDF from the request page.`,
+    link: `/requests/${requestId}`,
+  });
+}
+
+async function notifyNextApproverAfterSubmit(
+  user: SessionUser,
+  request: {
+    id: string;
+    requestNumber: string;
+    title: string;
+    category: RequestCategory;
+    clubId: string | null;
+  },
+  departmentId: string,
+  currentRoleCode: RoleCode | null,
+  title: string
+) {
+  const link = `/requests/${request.id}`;
+  const message = `${request.requestNumber}: ${request.title}`;
+
+  if (request.category === "CLUB" && request.clubId) {
+    await notifyClubAuthority(request.clubId, { title, message, link });
+  } else if (currentRoleCode === "HOD") {
+    await notifyApprovers({
+      roleCode: "HOD",
+      departmentId,
+      title,
+      message,
+      link,
+      excludeUserId: user.id,
+    });
+  } else if (currentRoleCode) {
+    await notifyApprovers({
+      roleCode: currentRoleCode,
+      title,
+      message,
+      link,
+      excludeUserId: user.id,
+    });
+  }
 }
 
 export async function createRequest(
@@ -163,6 +275,7 @@ export async function createRequest(
   let status: RequestStatus = "DRAFT";
 
   let workflowStepsForCreate = null;
+  let submitPosition: SubmitWorkflowPosition | null = null;
 
   if (data.submit) {
     workflowStepsForCreate = await resolveWorkflowForNewRequest({
@@ -171,10 +284,12 @@ export async function createRequest(
       academicSectionId: data.category === "ACADEMIC" ? data.academicSectionId : null,
       clubId: data.category === "CLUB" ? data.clubId : null,
     });
-    const initial = getInitialStep(workflowStepsForCreate);
-    currentStep = initial.step;
-    currentRoleCode = initial.roleCode;
-    status = "PENDING";
+    submitPosition = resolveSubmitWorkflowPosition(user, workflowStepsForCreate, {
+      category: data.category,
+    });
+    currentStep = submitPosition.currentStep;
+    currentRoleCode = submitPosition.currentRoleCode;
+    status = submitPosition.status;
   }
 
   const request = await prisma.request.create({
@@ -214,6 +329,7 @@ export async function createRequest(
       budgetDifference: data.budgetDifference,
       financialDescription: data.financialDescription,
       submittedAt: data.submit ? new Date() : null,
+      completedAt: submitPosition?.status === "COMPLETED" ? new Date() : null,
     },
     include: {
       department: true,
@@ -234,6 +350,14 @@ export async function createRequest(
         remarks: "Request submitted",
       },
     });
+
+    if (submitPosition) {
+      await recordAutoApprovedSteps(request.id, user.id, submitPosition.autoApprovedSteps);
+    }
+
+    if (submitPosition?.status === "COMPLETED") {
+      await notifyRequestCompleted(user.id, request.requestNumber, request.id);
+    }
 
     await notifyAfterRequestSubmit(
       user,
@@ -359,18 +483,19 @@ export async function submitDraftRequest(user: SessionUser, requestId: string) {
     academicSectionId: request.category === "ACADEMIC" ? request.academicSectionId : null,
     clubId: request.category === "CLUB" ? request.clubId : null,
   });
-  const initial = getInitialStep(workflowStepsForCreate);
-  const currentStep = initial.step;
-  const currentRoleCode = initial.roleCode;
+  const submitPosition = resolveSubmitWorkflowPosition(user, workflowStepsForCreate, {
+    category: request.category,
+  });
 
   const updated = await prisma.request.update({
     where: { id: requestId },
     data: {
-      status: "PENDING",
-      currentStep,
-      currentRoleCode,
+      status: submitPosition.status,
+      currentStep: submitPosition.currentStep,
+      currentRoleCode: submitPosition.currentRoleCode,
       workflowPath: serializeWorkflowPath(workflowStepsForCreate) as unknown as Prisma.InputJsonValue,
       submittedAt: new Date(),
+      completedAt: submitPosition.status === "COMPLETED" ? new Date() : null,
     },
     include: { department: true, raisedBy: true, club: true },
   });
@@ -387,12 +512,18 @@ export async function submitDraftRequest(user: SessionUser, requestId: string) {
     },
   });
 
+  await recordAutoApprovedSteps(updated.id, user.id, submitPosition.autoApprovedSteps);
+
+  if (submitPosition.status === "COMPLETED") {
+    await notifyRequestCompleted(user.id, updated.requestNumber, updated.id);
+  }
+
   await notifyAfterRequestSubmit(
     user,
     updated,
     updated.departmentId,
-    currentRoleCode,
-    currentStep
+    submitPosition.currentRoleCode,
+    submitPosition.currentStep
   );
 
   await createAuditLog({
@@ -523,12 +654,20 @@ export async function resubmitAfterResend(user: SessionUser, requestId: string) 
   );
   if (validationError) throw new Error(validationError);
 
+  const workflowSteps = await getWorkflowStepsForRequest(request);
+  const submitPosition = resolveSubmitWorkflowPosition(user, workflowSteps, {
+    category: request.category,
+    startStep: returnStep,
+    startRoleCode: returnRole,
+  });
+
   const updated = await prisma.request.update({
     where: { id: requestId },
     data: {
-      status: "PENDING",
-      currentRoleCode: returnRole,
-      currentStep: returnStep,
+      status: submitPosition.status,
+      currentRoleCode: submitPosition.currentRoleCode,
+      currentStep: submitPosition.currentStep,
+      completedAt: submitPosition.status === "COMPLETED" ? new Date() : null,
     },
   });
 
@@ -545,37 +684,35 @@ export async function resubmitAfterResend(user: SessionUser, requestId: string) 
     },
   });
 
+  await recordAutoApprovedSteps(requestId, user.id, submitPosition.autoApprovedSteps);
+
   const link = `/requests/${requestId}`;
   const message = `${request.requestNumber}: ${request.title}`;
 
-  if (returnRole === "HOD" && request.departmentId) {
-    await notifyApprovers({
-      roleCode: "HOD",
-      departmentId: request.departmentId,
-      title: "Request resubmitted after recheck",
-      message,
-      link,
-    });
-  } else if (returnRole === "CLUB_AUTHORITY" && request.clubId) {
-    await notifyClubAuthority(request.clubId, {
-      title: "Club request resubmitted after recheck",
-      message,
-      link,
-    });
+  if (submitPosition.status === "COMPLETED") {
+    await notifyRequestCompleted(user.id, request.requestNumber, requestId);
   } else {
-    await notifyApprovers({
-      roleCode: returnRole,
-      title: "Request resubmitted after recheck",
-      message,
-      link,
-    });
+    await notifyNextApproverAfterSubmit(
+      user,
+      request,
+      request.departmentId,
+      submitPosition.currentRoleCode,
+      "Request resubmitted after recheck"
+    );
   }
+
+  const advancedPastHod =
+    returnRole === "HOD" &&
+    user.roleCode === "HOD" &&
+    submitPosition.autoApprovedSteps.length > 0;
 
   await createNotification({
     userId: user.id,
     type: "REQUEST_SUBMITTED",
     title: "Request resubmitted",
-    message: `Your request ${request.requestNumber} was sent back to ${returnRole} for review.`,
+    message: advancedPastHod
+      ? `Your request ${request.requestNumber} was updated and forwarded to the next approver.`
+      : `Your request ${request.requestNumber} was sent back to ${returnRole} for review.`,
     link,
   });
 
@@ -584,7 +721,12 @@ export async function resubmitAfterResend(user: SessionUser, requestId: string) 
     action: "REQUEST_RESUBMIT",
     entityType: "Request",
     entityId: requestId,
-    newValue: { status: "PENDING", returnRole, returnStep },
+    newValue: {
+      status: submitPosition.status,
+      returnRole,
+      returnStep,
+      currentRoleCode: submitPosition.currentRoleCode,
+    },
   });
 
   return updated;
