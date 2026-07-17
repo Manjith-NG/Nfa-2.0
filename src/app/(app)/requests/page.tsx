@@ -77,7 +77,7 @@ async function RequestsList({
     departmentId,
   });
 
-  return <RequestsTable items={items} />;
+  return <RequestsTable items={items} currentUserId={user?.id} />;
 }
 
 export default function RequestsPage({

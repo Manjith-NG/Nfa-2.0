@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/session";
 import { prisma } from "@/lib/db";
-import { canViewRequest } from "@/lib/rbac";
+import { canViewRequest, requestViewContext } from "@/lib/rbac";
 import { getUserClubIds } from "@/lib/club-access";
 import { readRequestUpload } from "@/lib/upload";
 
@@ -15,12 +15,15 @@ export async function GET(
   const { id, attachmentId } = await params;
   const disposition =
     new URL(req.url).searchParams.get("disposition") === "inline" ? "inline" : "attachment";
-  const request = await prisma.request.findUnique({ where: { id } });
+  const request = await prisma.request.findUnique({
+    where: { id },
+    include: { raisedBy: { include: { role: true } } },
+  });
   if (!request) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const userClubIds =
     user.roleCode === "CLUB_AUTHORITY" ? await getUserClubIds(user.id) : undefined;
-  if (!canViewRequest(user, request, userClubIds)) {
+  if (!canViewRequest(user, requestViewContext({ ...request, raisedByRoleCode: request.raisedBy.role.code }), userClubIds)) {
     return NextResponse.json({ error: "Access denied" }, { status: 403 });
   }
 

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { canViewRequest, canApproveAtStep } from "@/lib/rbac";
+import { canViewRequest, canApproveAtStep, requestViewContext } from "@/lib/rbac";
 import { getUserClubIds } from "@/lib/club-access";
 import { buildTimeline, type TimelineStepResult } from "@/lib/workflow/engine";
 import { getWorkflowStepsForRequest } from "@/lib/workflow/resolve";
@@ -48,6 +48,7 @@ export type RequestDetailData = {
   canManageWorkflow?: boolean;
   canForward?: boolean;
   canEdit?: boolean;
+  canSubmitDraft?: boolean;
   canResubmit?: boolean;
   resendInfo?: {
     roleCode: RoleCode;
@@ -57,7 +58,6 @@ export type RequestDetailData = {
   } | null;
   workflowSteps?: { roleCode: RoleCode; stepLabel: string }[];
   currentRoleCode?: RoleCode | null;
-  workflowNote?: string;
   raisedById?: string;
   remarks: {
     id: string;
@@ -121,7 +121,11 @@ export async function getRequestDetailData(
   const userClubIds =
     user.roleCode === "CLUB_AUTHORITY" ? await getUserClubIds(user.id) : undefined;
 
-  if (!canViewRequest(user, request, userClubIds)) {
+  if (!canViewRequest(user, requestViewContext({
+    ...request,
+    raisedByRoleCode: request.raisedBy.role.code,
+    status: request.status,
+  }), userClubIds)) {
     return null;
   }
 
@@ -139,11 +143,6 @@ export async function getRequestDetailData(
       createdAt: h.createdAt,
     }))
   );
-
-  const workflowLabels = workflowSteps
-    .filter((s) => s.roleCode !== "OFC")
-    .map((s) => s.stepLabel.replace(" Approval", ""))
-    .join(" → ");
 
   const latestResend = [...request.approvalHistory]
     .reverse()
@@ -188,6 +187,7 @@ export async function getRequestDetailData(
       canApproveAtStep(user, request, userClubIds) &&
       ["PENDING", "UNDER_REVIEW", "FORWARDED"].includes(request.status),
     canEdit: isOwner && ["DRAFT", "RESEND"].includes(request.status),
+    canSubmitDraft: isOwner && request.status === "DRAFT",
     canResubmit: isOwner && request.status === "RESEND",
     resendInfo:
       request.status === "RESEND" && latestResend
@@ -207,7 +207,6 @@ export async function getRequestDetailData(
       ["PENDING", "FORWARDED"].includes(request.status),
     canDownloadPdf: canDownloadFullCertificate(user, request),
     canDownloadSummary: canDownloadSummaryPdf(user, request),
-    workflowNote: `Approval path: ${workflowLabels} → awaiting final clearance. Short Report PDF is available for review; Full Approval Certificate downloads after OFC verification (Verified status).`,
     remarks: request.remarks.map((r) => ({
       id: r.id,
       content: r.content,

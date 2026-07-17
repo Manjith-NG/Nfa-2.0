@@ -12,6 +12,7 @@ import type { RequestDetailData } from "@/lib/services/request-detail-service";
 import { downloadFromApi } from "@/lib/download-client";
 import { AttachmentActions } from "@/components/requests/attachment-actions";
 import { validateApprovalRemarks } from "@/lib/request-validation";
+import { ErrorDialog } from "@/components/ui/error-dialog";
 import { Download, Loader2, FileText, Upload, Paperclip } from "lucide-react";
 import type { RoleCode } from "@prisma/client";
 
@@ -40,6 +41,7 @@ export function RequestDetailClient({
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState<"summary" | "full" | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function formatFileSize(bytes: number): string {
@@ -86,6 +88,29 @@ export function RequestDetailClient({
     const res = await fetch(`/api/requests/${id}`);
     const d = await res.json();
     if (d.success) setData(d.data);
+  }
+
+  async function handleSubmitDraft() {
+    const confirmed = window.confirm(
+      "Submit this draft for approval?\n\nOnce submitted, it will enter the approval workflow."
+    );
+    if (!confirmed) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/requests/${id}/submit`, { method: "POST" });
+      const result = await res.json();
+      if (!result.success) {
+        setErrorDialog(result.error ?? "Failed to submit draft");
+        return;
+      }
+      router.refresh();
+      await refresh();
+    } catch (e) {
+      setErrorDialog(e instanceof Error ? e.message : "Failed to submit draft");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleAction(action: "APPROVE" | "REJECT" | "RESEND") {
@@ -149,12 +174,22 @@ export function RequestDetailClient({
           <div>
             <h3 className="font-semibold text-slate-900">Documents &amp; PDFs</h3>
             <p className="mt-1 text-sm text-slate-500">
-              <strong>Short Report</strong> — one-page overview for quick review.{" "}
-              <strong>Full Certificate</strong> — complete approval record after OFC verification.
+              {data.canDownloadSummary ? (
+                <>
+                  <strong>Short Report</strong> — one-page overview for quick review.{" "}
+                  <strong>Full Certificate</strong> — complete approval record after OFC verification.
+                </>
+              ) : (
+                <>
+                  <strong>Full Certificate</strong> — complete approval record after OFC verification.
+                </>
+              )}
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {data.canDownloadSummary ? (
+          <div
+            className={`grid gap-3 ${data.canDownloadSummary ? "sm:grid-cols-2" : ""}`}
+          >
+            {data.canDownloadSummary && (
               <button
                 type="button"
                 onClick={() => handleDownload("summary")}
@@ -175,16 +210,6 @@ export function RequestDetailClient({
                   </p>
                 </div>
               </button>
-            ) : (
-              <div className="flex items-start gap-3 rounded-xl border border-dashed border-slate-200 bg-slate-50 p-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-200 text-slate-400">
-                  <FileText className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="font-semibold text-slate-500">Short Report PDF</p>
-                  <p className="mt-0.5 text-xs text-slate-500">Available after the request is submitted.</p>
-                </div>
-              </div>
             )}
             {data.canDownloadPdf ? (
               <button
@@ -224,6 +249,33 @@ export function RequestDetailClient({
         </div>
       )}
 
+      {data.status === "DRAFT" && data.canEdit && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <p className="font-semibold">Draft — not submitted yet</p>
+          <p className="mt-1 text-amber-900">
+            This request is saved in My Requests as a draft. Edit it anytime, then submit when you are ready.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href={`/requests/${id}/edit`}
+              className="inline-flex rounded-lg border border-amber-400 bg-white px-4 py-2 text-sm font-medium text-amber-900 hover:bg-amber-100"
+            >
+              Edit Draft
+            </Link>
+            {data.canSubmitDraft && (
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleSubmitDraft}
+                className="inline-flex rounded-lg bg-nfa-primary px-4 py-2 text-sm font-medium text-white hover:bg-nfa-primary-light disabled:opacity-60"
+              >
+                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Submit Request"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {data.resendInfo && (
         <div className="rounded-lg border border-yellow-300 bg-yellow-50 px-4 py-3 text-sm text-yellow-900">
           <p className="font-semibold">
@@ -243,12 +295,6 @@ export function RequestDetailClient({
               Edit & Resubmit
             </Link>
           )}
-        </div>
-      )}
-
-      {data.workflowNote && !data.resendInfo && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-          {data.workflowNote}
         </div>
       )}
 
@@ -407,10 +453,22 @@ export function RequestDetailClient({
         </div>
 
         <div className="nfa-card lg:sticky lg:top-20 lg:self-start">
-          <h3 className="mb-6 font-semibold">Approval Tracking</h3>
-          <ApprovalTimeline steps={data.timeline} requestNumber={data.requestNumber} />
+          <h3 className="mb-6 font-semibold">
+            {data.status === "DRAFT" ? "Draft Status" : "Approval Tracking"}
+          </h3>
+          {data.status === "DRAFT" ? (
+            <p className="text-sm text-slate-500">
+              Submit this draft to start the approval workflow. Until then, it stays in My Requests as a draft.
+            </p>
+          ) : (
+            <ApprovalTimeline steps={data.timeline} requestNumber={data.requestNumber} />
+          )}
         </div>
       </div>
+
+      {errorDialog && (
+        <ErrorDialog message={errorDialog} onClose={() => setErrorDialog(null)} />
+      )}
     </div>
   );
 }

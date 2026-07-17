@@ -82,16 +82,6 @@ export function validateRequestFormFields(
   );
   if (dateError) return dateError;
 
-  for (const line of [...budgetLines.expenditures, ...budgetLines.receivables]) {
-    const hasContent =
-      line.particulars.trim() ||
-      (parseFloat(line.amount) || 0) > 0 ||
-      (parseFloat(line.quantity) || 0) > 0;
-    if (hasContent && !line.remarks.trim()) {
-      return "Remarks are required for every budget line with data";
-    }
-  }
-
   return null;
 }
 

@@ -46,6 +46,8 @@ export async function GET(req: NextRequest) {
   const departmentId =
     scope === "department" ? user.departmentId! : departmentIdParam ?? undefined;
 
+  const hideEmployeeId = user.roleCode === "HOD";
+
   const users = await prisma.user.findMany({
     where: {
       isActive: true,
@@ -57,7 +59,9 @@ export async function GET(req: NextRequest) {
               { firstName: { contains: search, mode: "insensitive" } },
               { lastName: { contains: search, mode: "insensitive" } },
               { email: { contains: search, mode: "insensitive" } },
-              { employeeId: { contains: search, mode: "insensitive" } },
+              ...(hideEmployeeId
+                ? []
+                : [{ employeeId: { contains: search, mode: "insensitive" as const } }]),
             ],
           }
         : {}),
@@ -66,7 +70,7 @@ export async function GET(req: NextRequest) {
     take: search ? 25 : undefined,
     select: {
       id: true,
-      employeeId: true,
+      ...(hideEmployeeId ? {} : { employeeId: true }),
       email: true,
       firstName: true,
       lastName: true,
@@ -81,11 +85,17 @@ export async function GET(req: NextRequest) {
   });
 
   const data = canEditUsers(user)
-    ? users.map(({ passwordHint, employeeId, ...row }) => ({
-        ...row,
-        employeeId,
-        loginPassword: passwordHint ?? employeeId,
-      }))
+    ? users.map((row) => {
+        const { passwordHint, employeeId, ...rest } = row as typeof row & {
+          passwordHint?: string | null;
+          employeeId?: string;
+        };
+        return {
+          ...rest,
+          ...(hideEmployeeId ? {} : { employeeId: employeeId! }),
+          loginPassword: passwordHint ?? employeeId,
+        };
+      })
     : users;
 
   return NextResponse.json({ success: true, data });

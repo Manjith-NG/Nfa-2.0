@@ -19,7 +19,9 @@ export default function DepartmentRequestsPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-semibold text-slate-900">Department Requests</h2>
-        <p className="text-slate-500">Academic requests from your department (excludes club)</p>
+        <p className="text-slate-500">
+          Faculty requests in your department currently at HOD approval (HOD workflow only)
+        </p>
       </div>
       <div className="nfa-card overflow-hidden p-0">
         <table className="nfa-table w-full">

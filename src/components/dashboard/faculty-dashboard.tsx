@@ -86,11 +86,15 @@ async function FacultyRecentRequests({ user }: { user: SessionUser }) {
           </tr>
         </thead>
         <tbody>
-          {requests.map((r) => (
+          {requests.map((r) => {
+            const isOwnDraft = r.status === "DRAFT";
+            const href = isOwnDraft ? `/requests/${r.id}/edit` : `/requests/${r.id}`;
+
+            return (
             <tr key={r.id} className="border-b border-nfa-border/60 last:border-0">
               <td className="py-3.5">
                 <Link
-                  href={`/requests/${r.id}`}
+                  href={href}
                   className="font-medium text-slate-900 hover:text-nfa-primary"
                 >
                   {r.title}
@@ -102,10 +106,17 @@ async function FacultyRecentRequests({ user }: { user: SessionUser }) {
                 <StatusBadge status={r.status} currentRoleCode={r.currentRoleCode} />
               </td>
               <td className="py-3.5">
-                <RequestReviewLink requestId={r.id} />
+                {isOwnDraft ? (
+                  <Link href={href} className="text-sm font-medium text-nfa-primary hover:underline">
+                    Continue Draft
+                  </Link>
+                ) : (
+                  <RequestReviewLink requestId={r.id} />
+                )}
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

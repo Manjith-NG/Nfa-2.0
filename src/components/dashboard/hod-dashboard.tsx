@@ -23,7 +23,7 @@ async function HodStats({ user }: { user: SessionUser }) {
     <DashboardKpiGrid
       items={[
         {
-          title: "Department Requests",
+          title: "At HOD Approval",
           value: stats.total,
           icon: FileText,
           href: "/requests/department",

@@ -9,7 +9,7 @@ import type { SessionUser } from "@/types";
 
 interface UserRow {
   id: string;
-  employeeId: string;
+  employeeId?: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -118,6 +118,8 @@ export function FacultyRoster({
       ? `${viewer.departmentName} — faculty and staff in your department`
       : "All active staff grouped by department";
 
+  const showEmployeeId = viewer?.roleCode !== "HOD";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -171,7 +173,9 @@ export function FacultyRoster({
                     <tr key={u.id}>
                       <td className="min-w-[140px] font-medium">
                         {displayName(u.firstName, u.lastName)}
-                        <p className="text-xs font-normal text-slate-500">{u.employeeId}</p>
+                        {showEmployeeId && (
+                          <p className="text-xs font-normal text-slate-500">{u.employeeId}</p>
+                        )}
                       </td>
                       <td className="max-w-[220px] truncate text-slate-600" title={u.email}>
                         {u.email}

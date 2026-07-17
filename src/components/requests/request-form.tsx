@@ -21,6 +21,10 @@ import {
   type WorkflowPreviewStep,
 } from "@/components/workflow/workflow-path-preview";
 import { UserDetailDrawer } from "@/components/users/user-detail-drawer";
+import { ErrorDialog } from "@/components/ui/error-dialog";
+import { MultiSelectList } from "@/components/ui/multi-select-list";
+
+const MULTI_VALUE_SEPARATOR = "; ";
 
 interface NaacCriterionOption {
   id: string;
@@ -114,6 +118,20 @@ export function RequestForm({
   const [departments, setDepartments] = useState<Department[]>([]);
   const [naacCriteria, setNaacCriteria] = useState<NaacCriterionOption[]>([]);
   const [metrics, setMetrics] = useState<MetricOption[]>([]);
+  const [sectionsLoading, setSectionsLoading] = useState(true);
+  const [clubsLoading, setClubsLoading] = useState(true);
+  const [naacLoading, setNaacLoading] = useState(true);
+  const [metricsLoading, setMetricsLoading] = useState(true);
+  const [departmentsLoading, setDepartmentsLoading] = useState(false);
+  const [sectionsError, setSectionsError] = useState<string | null>(null);
+  const [clubsError, setClubsError] = useState<string | null>(null);
+  const [naacError, setNaacError] = useState<string | null>(null);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
+  const [departmentsError, setDepartmentsError] = useState<string | null>(null);
+  const [errorDialog, setErrorDialog] = useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [selectedNaacIds, setSelectedNaacIds] = useState<string[]>([]);
+  const [selectedMetricIds, setSelectedMetricIds] = useState<string[]>([]);
   const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
   const [savedAttachments, setSavedAttachments] = useState<SavedAttachment[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -129,8 +147,6 @@ export function RequestForm({
     title: initialEditData?.title ?? "",
     briefNote: initialEditData?.briefNote ?? "",
     needForProposal: initialEditData?.needForProposal ?? "",
-    naacCriterionId: "",
-    metricId: "",
     naacCategory: initialEditData?.naacCategory ?? "",
     metricsCategory: initialEditData?.metricsCategory ?? "",
     proposalDate: initialEditData?.proposalDate?.slice(0, 10) ?? "",
@@ -138,7 +154,6 @@ export function RequestForm({
     eventEndDate: initialEditData?.eventEndDate?.slice(0, 10) ?? "",
     links: initialEditData?.links ?? "",
     clubId: initialEditData?.clubId ?? "",
-    financialDescription: initialEditData?.financialDescription ?? "",
   });
 
   const [category, setCategory] = useState<"ACADEMIC" | "CLUB">(
@@ -165,25 +180,68 @@ export function RequestForm({
   const departmentName = user.departmentName ?? "—";
   const needsDeptPicker = !user.departmentId;
 
-  useEffect(() => {
-    fetch("/api/master/clubs")
-      .then((r) => r.json())
-      .then((d) => d.success && setClubs(d.data));
-    fetch("/api/master/academic-sections")
-      .then((r) => r.json())
-      .then((d) => d.success && setSections(d.data));
-    fetch("/api/master/naac-criteria")
-      .then((r) => r.json())
-      .then((d) => d.success && setNaacCriteria(d.data));
-    fetch("/api/master/metrics")
-      .then((r) => r.json())
-      .then((d) => d.success && setMetrics(d.data));
+  async function fetchMaster<T>(
+    url: string,
+    setData: (value: T[]) => void,
+    setLoadingFlag: (value: boolean) => void,
+    setError: (value: string | null) => void
+  ) {
+    setLoadingFlag(true);
+    setError(null);
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error ?? `Failed to load ${url}`);
+      }
+      setData(data.data ?? []);
+    } catch (e) {
+      setData([]);
+      setError(e instanceof Error ? e.message : "Failed to load options");
+    } finally {
+      setLoadingFlag(false);
+    }
+  }
+
+  const loadMasterData = useCallback(() => {
+    void fetchMaster<Club>(
+      "/api/master/clubs",
+      setClubs,
+      setClubsLoading,
+      setClubsError
+    );
+    void fetchMaster<AcademicSectionOption>(
+      "/api/master/academic-sections",
+      setSections,
+      setSectionsLoading,
+      setSectionsError
+    );
+    void fetchMaster<NaacCriterionOption>(
+      "/api/master/naac-criteria",
+      setNaacCriteria,
+      setNaacLoading,
+      setNaacError
+    );
+    void fetchMaster<MetricOption>(
+      "/api/master/metrics",
+      setMetrics,
+      setMetricsLoading,
+      setMetricsError
+    );
     if (needsDeptPicker) {
-      fetch("/api/master/departments")
-        .then((r) => r.json())
-        .then((d) => d.success && setDepartments(d.data));
+      setDepartmentsLoading(true);
+      void fetchMaster<Department>(
+        "/api/master/departments",
+        setDepartments,
+        setDepartmentsLoading,
+        setDepartmentsError
+      );
     }
   }, [needsDeptPicker]);
+
+  useEffect(() => {
+    loadMasterData();
+  }, [loadMasterData]);
 
   useEffect(() => {
     if (!editRequestId) return;
@@ -279,10 +337,10 @@ export function RequestForm({
 
   const filteredMetrics = useMemo(
     () =>
-      form.naacCriterionId
-        ? metrics.filter((m) => m.criterionId === form.naacCriterionId)
+      selectedNaacIds.length > 0
+        ? metrics.filter((m) => selectedNaacIds.includes(m.criterionId))
         : metrics,
-    [metrics, form.naacCriterionId]
+    [metrics, selectedNaacIds]
   );
 
   function formatCriterionLabel(c: NaacCriterionOption) {
@@ -290,32 +348,74 @@ export function RequestForm({
     return `${c.number}. ${c.title} (${stage})`;
   }
 
-  function handleCriterionChange(criterionId: string) {
-    const criterion = naacCriteria.find((c) => c.id === criterionId);
-    setForm((prev) => ({
-      ...prev,
-      naacCriterionId: criterionId,
-      metricId: "",
-      naacCategory: criterion ? formatCriterionLabel(criterion) : "",
-      metricsCategory: "",
-      financialDescription: "",
-    }));
+  function formatMetricLabel(metric: MetricOption) {
+    const desc = metric.description?.trim();
+    return desc ? `${metric.code}. ${metric.title} — ${desc}` : `${metric.code}. ${metric.title}`;
   }
 
-  function handleMetricChange(metricId: string) {
-    const metric = metrics.find((m) => m.id === metricId);
-    const criterion = metric
-      ? naacCriteria.find((c) => c.id === metric.criterionId)
-      : undefined;
-    setForm((prev) => ({
-      ...prev,
-      metricId,
-      naacCriterionId: metric?.criterionId ?? prev.naacCriterionId,
-      naacCategory: criterion ? formatCriterionLabel(criterion) : prev.naacCategory,
-      metricsCategory: metric ? `${metric.code}. ${metric.title}` : "",
-      financialDescription: metric?.description ?? "",
-    }));
+  function syncNaacCategory(ids: string[]) {
+    const labels = ids
+      .map((id) => naacCriteria.find((c) => c.id === id))
+      .filter(Boolean)
+      .map((c) => formatCriterionLabel(c!));
+    setForm((prev) => ({ ...prev, naacCategory: labels.join(MULTI_VALUE_SEPARATOR) }));
   }
+
+  function syncMetricsCategory(ids: string[]) {
+    const labels = ids
+      .map((id) => metrics.find((m) => m.id === id))
+      .filter(Boolean)
+      .map((m) => formatMetricLabel(m!));
+    setForm((prev) => ({ ...prev, metricsCategory: labels.join(MULTI_VALUE_SEPARATOR) }));
+  }
+
+  function toggleNaacCriterion(criterionId: string) {
+    setSelectedNaacIds((prev) => {
+      const next = prev.includes(criterionId)
+        ? prev.filter((id) => id !== criterionId)
+        : [...prev, criterionId];
+      syncNaacCategory(next);
+
+      setSelectedMetricIds((metricPrev) => {
+        const validMetrics = metricPrev.filter((metricId) => {
+          const metric = metrics.find((m) => m.id === metricId);
+          return metric && next.includes(metric.criterionId);
+        });
+        syncMetricsCategory(validMetrics);
+        return validMetrics;
+      });
+
+      return next;
+    });
+  }
+
+  function toggleMetric(metricId: string) {
+    setSelectedMetricIds((prev) => {
+      const next = prev.includes(metricId)
+        ? prev.filter((id) => id !== metricId)
+        : [...prev, metricId];
+      syncMetricsCategory(next);
+      return next;
+    });
+  }
+
+  useEffect(() => {
+    if (!initialEditData?.naacCategory || naacCriteria.length === 0) return;
+    const parts = initialEditData.naacCategory.split(MULTI_VALUE_SEPARATOR).map((s) => s.trim());
+    const ids = parts
+      .map((part) => naacCriteria.find((c) => formatCriterionLabel(c) === part)?.id)
+      .filter((id): id is string => Boolean(id));
+    if (ids.length > 0) setSelectedNaacIds(ids);
+  }, [initialEditData?.naacCategory, naacCriteria]);
+
+  useEffect(() => {
+    if (!initialEditData?.metricsCategory || metrics.length === 0) return;
+    const parts = initialEditData.metricsCategory.split(MULTI_VALUE_SEPARATOR).map((s) => s.trim());
+    const ids = parts
+      .map((part) => metrics.find((m) => formatMetricLabel(m) === part)?.id)
+      .filter((id): id is string => Boolean(id));
+    if (ids.length > 0) setSelectedMetricIds(ids);
+  }, [initialEditData?.metricsCategory, metrics]);
 
   const addFiles = useCallback((files: FileList | File[]) => {
     const incoming = Array.from(files);
@@ -421,15 +521,18 @@ export function RequestForm({
       grandTotalReceivable: recTotal,
       budgetDifference: difference,
       budgetAmount: expTotal,
-      financialDescription: form.financialDescription || undefined,
       submit: submitRequest,
     };
+  }
+
+  function showError(message: string) {
+    setErrorDialog(message);
   }
 
   async function submit(submitRequest: boolean) {
     const validationError = validateForm(submitRequest);
     if (validationError) {
-      alert(validationError);
+      showError(validationError);
       return;
     }
 
@@ -451,7 +554,7 @@ export function RequestForm({
         });
         const patchData = await patchRes.json();
         if (!patchData.success) {
-          alert(patchData.error ?? "Failed to save changes");
+          showError(patchData.error ?? "Failed to save changes");
           return;
         }
 
@@ -465,21 +568,28 @@ export function RequestForm({
           });
           const resubmitData = await resubmitRes.json();
           if (!resubmitData.success) {
-            alert(resubmitData.error ?? "Failed to resubmit");
+            showError(resubmitData.error ?? "Failed to resubmit");
             return;
           }
-        } else if (editStatus === "DRAFT" && submitRequest) {
+          router.push(`/requests/${editRequestId}`);
+          return;
+        }
+
+        if (editStatus === "DRAFT" && submitRequest) {
           const submitRes = await fetch(`/api/requests/${editRequestId}/submit`, {
             method: "POST",
           });
           const submitData = await submitRes.json();
           if (!submitData.success) {
-            alert(submitData.error ?? "Failed to submit");
+            showError(submitData.error ?? "Failed to submit");
             return;
           }
+          router.push(`/requests/${editRequestId}`);
+          return;
         }
 
-        router.push(`/requests/${editRequestId}`);
+        setSaveMessage("Draft saved successfully.");
+        router.push(`/requests/${editRequestId}/edit`);
         return;
       }
 
@@ -498,7 +608,7 @@ export function RequestForm({
       });
       const data = await res.json();
       if (!data.success) {
-        alert(data.error ?? "Failed to save");
+        showError(data.error ?? "Failed to save");
         return;
       }
 
@@ -512,18 +622,24 @@ export function RequestForm({
         const submitRes = await fetch(`/api/requests/${requestId}/submit`, { method: "POST" });
         const submitData = await submitRes.json();
         if (!submitData.success) {
-          alert(
+          showError(
             submitData.error ??
-              "Request saved as draft with documents, but submission failed. Open the request and submit again."
+              "Request saved as draft with documents, but submission failed. Open the draft and submit again."
           );
-          router.push(`/requests/${requestId}`);
+          router.push(`/requests/${requestId}/edit`);
           return;
         }
+        router.push(`/requests/${requestId}`);
+        return;
       }
 
-      router.push(`/requests/${requestId}`);
+      if (submitRequest) {
+        router.push(`/requests/${requestId}`);
+      } else {
+        router.push(`/requests/${requestId}/edit`);
+      }
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Failed to save");
+      showError(e instanceof Error ? e.message : "Failed to save");
     } finally {
       setLoading(false);
     }
@@ -533,11 +649,23 @@ export function RequestForm({
     <div className="mx-auto max-w-5xl space-y-6 pb-12">
       <div className="overflow-hidden rounded-xl border border-nfa-border bg-white shadow-card">
         <div className="bg-gradient-to-r from-nfa-primary to-nfa-primary-light px-4 py-4 sm:px-6">
-          <h2 className="text-xl font-bold text-white sm:text-2xl">Raise Request</h2>
+          <h2 className="text-xl font-bold text-white sm:text-2xl">
+            {editRequestId
+              ? editStatus === "RESEND"
+                ? "Edit & Resubmit Request"
+                : "Edit Draft Request"
+              : "Raise Request"}
+          </h2>
           <p className="text-sm text-white/80">{APP_NAME} — Note For Approval</p>
         </div>
 
         <div className="space-y-6 p-4 sm:p-6">
+          {saveMessage && (
+            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800">
+              {saveMessage}
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-4 border-b border-nfa-border pb-4">
             {(["ACADEMIC", "CLUB"] as const).map((type) => (
               <label
@@ -570,15 +698,31 @@ export function RequestForm({
                 onChange={(e) =>
                   setForm({ ...form, academicSectionId: e.target.value })
                 }
+                disabled={sectionsLoading || Boolean(sectionsError)}
                 required
               >
-                <option value="">Select academic section</option>
+                <option value="">
+                  {sectionsLoading
+                    ? "Loading academic sections..."
+                    : sectionsError
+                      ? "Could not load academic sections"
+                      : "Select academic section"}
+                </option>
                 {sections.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.label}
                   </option>
                 ))}
               </select>
+              {sectionsError && (
+                <button
+                  type="button"
+                  onClick={loadMasterData}
+                  className="mt-2 text-sm font-medium text-nfa-primary hover:underline"
+                >
+                  Retry loading sections
+                </button>
+              )}
               {(workflowLoading || workflowSteps.length > 0) && (
                 <div className="mt-3 rounded-lg border border-nfa-border bg-slate-50/80 p-3">
                   {workflowLoading ? (
@@ -608,15 +752,31 @@ export function RequestForm({
                 className="nfa-input"
                 value={form.clubId}
                 onChange={(e) => setForm({ ...form, clubId: e.target.value })}
+                disabled={clubsLoading || Boolean(clubsError)}
                 required
               >
-                <option value="">Select club section</option>
+                <option value="">
+                  {clubsLoading
+                    ? "Loading club sections..."
+                    : clubsError
+                      ? "Could not load club sections"
+                      : "Select club section"}
+                </option>
                 {clubs.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
               </select>
+              {clubsError && (
+                <button
+                  type="button"
+                  onClick={loadMasterData}
+                  className="mt-2 text-sm font-medium text-nfa-primary hover:underline"
+                >
+                  Retry loading clubs
+                </button>
+              )}
               {(workflowLoading || workflowSteps.length > 0) && (
                 <div className="mt-3 rounded-lg border border-nfa-border bg-slate-50/80 p-3">
                   {workflowLoading ? (
@@ -644,8 +804,15 @@ export function RequestForm({
                 className="nfa-input"
                 value={form.departmentId}
                 onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
+                disabled={departmentsLoading || Boolean(departmentsError)}
               >
-                <option value="">Select department</option>
+                <option value="">
+                  {departmentsLoading
+                    ? "Loading departments..."
+                    : departmentsError
+                      ? "Could not load departments"
+                      : "Select department"}
+                </option>
                 {departments.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name}
@@ -691,34 +858,39 @@ export function RequestForm({
               />
             </div>
             <div>
-              <label className="nfa-label">NAAC Criterion</label>
-              <select
-                className="nfa-input"
-                value={form.naacCriterionId}
-                onChange={(e) => handleCriterionChange(e.target.value)}
-              >
-                <option value="">Select NAAC criterion</option>
-                {naacCriteria.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {formatCriterionLabel(c)}
-                  </option>
-                ))}
-              </select>
+              <MultiSelectList
+                label="NAAC Criterion"
+                options={naacCriteria.map((c) => ({
+                  id: c.id,
+                  label: formatCriterionLabel(c),
+                }))}
+                selectedIds={selectedNaacIds}
+                onToggle={toggleNaacCriterion}
+                loading={naacLoading}
+                error={naacError}
+                onRetry={loadMasterData}
+                emptyMessage="No NAAC criteria available"
+              />
             </div>
             <div>
-              <label className="nfa-label">Metric</label>
-              <select
-                className="nfa-input"
-                value={form.metricId}
-                onChange={(e) => handleMetricChange(e.target.value)}
-              >
-                <option value="">Select metric</option>
-                {filteredMetrics.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.code}. {m.title}
-                  </option>
-                ))}
-              </select>
+              <MultiSelectList
+                label="Metric"
+                options={filteredMetrics.map((m) => ({
+                  id: m.id,
+                  label: `${m.code}. ${m.title}`,
+                  hint: m.description ?? undefined,
+                }))}
+                selectedIds={selectedMetricIds}
+                onToggle={toggleMetric}
+                loading={metricsLoading}
+                error={metricsError}
+                onRetry={loadMasterData}
+                emptyMessage={
+                  selectedNaacIds.length > 0
+                    ? "No metrics for the selected NAAC criteria"
+                    : "No metrics available"
+                }
+              />
             </div>
             <div>
               <label className="nfa-label">
@@ -915,7 +1087,6 @@ export function RequestForm({
         onChange={setExpenditures}
         grandTotal={grandExp}
         onGrandTotalChange={setGrandExp}
-        remarksRequired
       />
 
       <BudgetLineTable
@@ -925,18 +1096,9 @@ export function RequestForm({
         onChange={setReceivables}
         grandTotal={grandRec}
         onGrandTotalChange={setGrandRec}
-        remarksRequired
       />
 
       <div className="nfa-card grid gap-4 sm:grid-cols-2">
-        <div className="sm:col-span-2">
-          <label className="nfa-label">Metric Description</label>
-          <textarea
-            className="nfa-input min-h-[80px]"
-            value={form.financialDescription}
-            onChange={(e) => setForm({ ...form, financialDescription: e.target.value })}
-          />
-        </div>
         <div>
           <label className="nfa-label">Difference (Expenditure − Receivables)</label>
           <input
@@ -987,6 +1149,8 @@ export function RequestForm({
       </div>
 
       <UserDetailDrawer userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+
+      {errorDialog && <ErrorDialog message={errorDialog} onClose={() => setErrorDialog(null)} />}
     </div>
   );
 }

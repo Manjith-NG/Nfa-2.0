@@ -138,17 +138,9 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       colWidths,
       "7",
       "Metrics",
-      data.metricsCategory?.trim() || "—"
-    );
-
-    y = drawMainCertificateRow(
-      doc,
-      margin,
-      y,
-      colWidths,
-      "8",
-      "Metric Description",
-      data.financialDescription?.trim() || data.title || "—"
+      [data.metricsCategory?.trim(), data.financialDescription?.trim()]
+        .filter(Boolean)
+        .join("; ") || "—"
     );
 
     const authorities = authorityRows(data.approvalHistory);
@@ -168,7 +160,7 @@ export function generateRequestPdf(data: RequestPdfInput): Promise<Buffer> {
       margin,
       y,
       colWidths,
-      "9",
+      "8",
       "Approval tracking",
       authorityNestedHeight,
       (nestedX, nestedY, nestedWidth) =>

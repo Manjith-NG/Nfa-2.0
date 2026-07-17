@@ -83,7 +83,7 @@ export async function GET(
       {
         error:
           type === "summary"
-            ? "Short report is available after the request is submitted, or anytime for Registrar and OFC."
+            ? "Short report is available only to Registrar, OFC, Admin, and Developer."
             : "Full approval certificate is available only after OFC verification (Verified status).",
       },
       { status: 403 }

@@ -18,7 +18,7 @@ import {
   resolveWorkflowForNewRequest,
   serializeWorkflowPath,
 } from "@/lib/workflow/resolve";
-import { canViewRequest, canApproveAtStep, canApproveRequests } from "@/lib/rbac";
+import { canViewRequest, canApproveAtStep, canApproveRequests, requestViewContext } from "@/lib/rbac";
 import { getUserClubIds } from "@/lib/club-access";
 import { createAuditLog, logWorkflowEvent } from "@/lib/audit";
 import {
@@ -27,6 +27,46 @@ import {
   notifyClubAuthority,
 } from "@/lib/notifications";
 import { validateApprovalRemarks, validateRequestFormFields } from "@/lib/request-validation";
+
+const HOD_QUEUE_STATUSES: RequestStatus[] = ["PENDING", "UNDER_REVIEW", "FORWARDED"];
+
+/** Workflow whose first approval step is HOD (department faculty flow). */
+export const hodEntryWorkflowWhere: Prisma.RequestWhereInput = {
+  workflowPath: {
+    path: ["0", "roleCode"],
+    equals: "HOD",
+  },
+};
+
+/** Academic requests raised by faculty in the HOD's department (HOD approval queue scope). */
+export function hodFacultyDepartmentWhere(
+  departmentId: string | null | undefined
+): Prisma.RequestWhereInput {
+  if (!departmentId) {
+    return { id: { equals: "__none__" } };
+  }
+
+  return {
+    departmentId,
+    category: "ACADEMIC",
+    submittedAt: { not: null },
+    raisedBy: { role: { code: "FACULTY" } },
+  };
+}
+
+/** Faculty HOD-entry requests currently waiting on this department's HOD. */
+export function hodFacultyQueueWhere(
+  departmentId: string | null | undefined
+): Prisma.RequestWhereInput {
+  return {
+    AND: [
+      hodFacultyDepartmentWhere(departmentId),
+      hodEntryWorkflowWhere,
+      { currentRoleCode: "HOD" },
+      { status: { in: HOD_QUEUE_STATUSES } },
+    ],
+  };
+}
 
 export async function createRequest(
   user: SessionUser,
@@ -558,7 +598,7 @@ export async function processApproval(
 ) {
   const request = await prisma.request.findUnique({
     where: { id: requestId },
-    include: { raisedBy: true, department: true },
+    include: { raisedBy: { include: { role: true } }, department: true },
   });
 
   if (!request) throw new Error("Request not found");
@@ -566,7 +606,7 @@ export async function processApproval(
   const userClubIds =
     user.roleCode === "CLUB_AUTHORITY" ? await getUserClubIds(user.id) : undefined;
 
-  if (!canViewRequest(user, request, userClubIds)) throw new Error("Access denied");
+  if (!canViewRequest(user, requestViewContext(request), userClubIds)) throw new Error("Access denied");
 
   if (!canApproveRequests(user)) {
     throw new Error("You are not authorized to approve requests");
@@ -777,18 +817,8 @@ export function buildRequestWhere(
   } else if (user.roleCode === "FACULTY") {
     where.raisedById = user.id;
   } else if (user.roleCode === "HOD") {
-    if (filters?.pendingForMe) {
-      where.departmentId = user.departmentId ?? undefined;
-      where.currentRoleCode = "HOD";
-      where.status = { in: ["PENDING", "UNDER_REVIEW", "FORWARDED"] };
-    } else {
-      where.OR = [
-        { raisedById: user.id },
-        {
-          departmentId: user.departmentId ?? undefined,
-          category: "ACADEMIC",
-        },
-      ];
+    if (!filters?.mine) {
+      Object.assign(where, hodFacultyQueueWhere(user.departmentId));
     }
   } else if (user.roleCode === "CLUB_AUTHORITY") {
     where.category = "CLUB";

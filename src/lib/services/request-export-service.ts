@@ -8,6 +8,7 @@ import {
 import type { VerifiedReportPeriod } from "@/lib/reports/verified-report-options";
 import { getVerifiedReportDateRange } from "@/lib/reports/verified-report-options";
 import type { SessionUser } from "@/types";
+import { canAccessShortSummary } from "@/lib/rbac";
 
 export type { VerifiedReportFormat, VerifiedReportPeriod } from "@/lib/reports/verified-report-options";
 export {
@@ -43,9 +44,8 @@ export function canDownloadSummaryPdf(
   user: SessionUser,
   request: { status: string; raisedById: string }
 ): boolean {
-  if (["REGISTRAR", "OFC", "ADMIN"].includes(user.roleCode)) return true;
-  if (request.raisedById === user.id && request.status !== "DRAFT") return true;
-  return request.status === "COMPLETED";
+  if (request.status === "DRAFT") return false;
+  return canAccessShortSummary(user);
 }
 
 /** @deprecated Use canDownloadFullCertificate or canDownloadSummaryPdf */

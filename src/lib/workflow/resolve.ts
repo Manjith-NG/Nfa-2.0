@@ -70,6 +70,14 @@ export function parseWorkflowPath(value: Prisma.JsonValue | null | undefined): W
   return steps.length > 0 ? steps : null;
 }
 
+/** True when the stored workflow starts with HOD (department faculty entry flow). */
+export function isHodEntryWorkflowPath(
+  workflowPath: Prisma.JsonValue | null | undefined
+): boolean {
+  const steps = parseWorkflowPath(workflowPath);
+  return steps?.[0]?.roleCode === "HOD";
+}
+
 export function serializeWorkflowPath(steps: WorkflowPathStep[]): WorkflowPathJson {
   return steps.map((step, index) => ({
     stepOrder: index + 1,

@@ -1,7 +1,7 @@
-import type { RoleCode, RequestCategory, Prisma } from "@prisma/client";
+import type { RoleCode, RequestCategory, Prisma, RequestStatus } from "@prisma/client";
 import type { SessionUser } from "@/types";
+import { isHodEntryWorkflowPath } from "@/lib/workflow/resolve";
 import { SUPER_ADMIN_ROLES, APPROVAL_ROLES, DEVELOPER_DEMO_EMAIL } from "./constants";
-import { parseWorkflowPath } from "@/lib/workflow/resolve";
 
 export type Permission =
   | "request:create"
@@ -131,32 +131,62 @@ export function isSuperAdmin(roleCode: RoleCode): boolean {
   return SUPER_ADMIN_ROLES.includes(roleCode);
 }
 
+/** Short summary PDFs — Registrar, OFC, Admin, and Developer only. */
+export function canAccessShortSummary(user: SessionUser): boolean {
+  return isSuperAdmin(user.roleCode) || isDeveloperUser(user);
+}
+
 export function isApprover(roleCode: RoleCode): boolean {
   return APPROVAL_ROLES.includes(roleCode);
 }
 
 /** Faculty may only view their own requests */
+export type RequestViewContext = {
+  raisedById: string;
+  raisedByRoleCode?: RoleCode;
+  departmentId: string;
+  category: RequestCategory;
+  clubId?: string | null;
+  currentRoleCode?: RoleCode | null;
+  submittedAt?: Date | string | null;
+  workflowPath?: Prisma.JsonValue | null;
+  status?: RequestStatus;
+};
+
+export function requestViewContext(
+  request: RequestViewContext & {
+    raisedBy?: { role: { code: RoleCode } };
+  }
+): RequestViewContext {
+  return {
+    raisedById: request.raisedById,
+    raisedByRoleCode: request.raisedByRoleCode ?? request.raisedBy?.role.code,
+    departmentId: request.departmentId,
+    category: request.category,
+    clubId: request.clubId,
+    currentRoleCode: request.currentRoleCode,
+    submittedAt: request.submittedAt,
+    workflowPath: request.workflowPath,
+    status: request.status,
+  };
+}
+
 export function canViewRequest(
   user: SessionUser,
-  request: {
-    raisedById: string;
-    departmentId: string;
-    category: RequestCategory;
-    clubId?: string | null;
-    currentRoleCode?: RoleCode | null;
-    workflowPath?: Prisma.JsonValue | null;
-  },
+  request: RequestViewContext,
   userClubIds?: string[]
 ): boolean {
   if (isSuperAdmin(user.roleCode)) return true;
-  if (user.roleCode === "FACULTY" || user.roleCode === "HOD") {
-    if (request.raisedById === user.id) return true;
-  }
-  if (user.roleCode === "HOD" && user.departmentId === request.departmentId) {
-    if (request.category === "ACADEMIC") return true;
-    if (request.currentRoleCode === "HOD") return true;
-    const steps = parseWorkflowPath(request.workflowPath);
-    return steps?.some((step) => step.roleCode === "HOD") ?? false;
+  if (request.raisedById === user.id) return true;
+  if (user.roleCode === "FACULTY") return false;
+  if (user.roleCode === "HOD") {
+    if (user.departmentId !== request.departmentId) return false;
+    if (request.category !== "ACADEMIC") return false;
+    if (request.raisedByRoleCode !== "FACULTY") return false;
+    if (request.submittedAt == null) return false;
+    if (!isHodEntryWorkflowPath(request.workflowPath)) return false;
+    if (request.currentRoleCode !== "HOD") return false;
+    return ["PENDING", "UNDER_REVIEW", "FORWARDED"].includes(request.status ?? "DRAFT");
   }
   if (["IQAC", "PMSEB", "HR", "COE"].includes(user.roleCode)) {
     return true;

@@ -4,7 +4,13 @@ import { RequestReviewLink } from "@/components/requests/request-review-link";
 import type { RequestListItem } from "@/types";
 import { formatDate } from "@/lib/utils";
 
-export function RequestsTable({ items }: { items: RequestListItem[] }) {
+export function RequestsTable({
+  items,
+  currentUserId,
+}: {
+  items: RequestListItem[];
+  currentUserId?: string;
+}) {
   if (items.length === 0) {
     return <p className="py-12 text-center text-slate-500">No requests found.</p>;
   }
@@ -24,11 +30,16 @@ export function RequestsTable({ items }: { items: RequestListItem[] }) {
         </tr>
       </thead>
       <tbody>
-        {items.map((r) => (
+        {items.map((r) => {
+          const isOwnDraft =
+            r.status === "DRAFT" && currentUserId && r.raisedById === currentUserId;
+          const href = isOwnDraft ? `/requests/${r.id}/edit` : `/requests/${r.id}`;
+
+          return (
           <tr key={r.id}>
             <td>
               <Link
-                href={`/requests/${r.id}`}
+                href={href}
                 className="font-medium text-nfa-primary hover:underline"
               >
                 {r.title}
@@ -43,10 +54,17 @@ export function RequestsTable({ items }: { items: RequestListItem[] }) {
             </td>
             <td className="text-slate-500">{formatDate(r.createdAt)}</td>
             <td>
-              <RequestReviewLink requestId={r.id} />
+              {isOwnDraft ? (
+                <Link href={href} className="nfa-btn-primary py-1.5 text-xs">
+                  Continue Draft
+                </Link>
+              ) : (
+                <RequestReviewLink requestId={r.id} />
+              )}
             </td>
           </tr>
-        ))}
+          );
+        })}
       </tbody>
     </table>
     </div>
